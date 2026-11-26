@@ -564,7 +564,7 @@ var GIPHY_TOPIC_MAP = {
   'rainy': 'rainy night',
   'lofi': 'lofi chill',
   'study': 'lofi study',
-  'cozy': 'cozy rain',
+  'cozy': 'cozy fireplace',
   'ghibli-gif': 'studio ghibli scenery'
 };
 
@@ -636,56 +636,53 @@ async function handleAmbientMedia(req, res, topicKey) {
 
     var parsed = JSON.parse(r.buf.toString('utf8'));
     var raw = (parsed && Array.isArray(parsed.data)) ? parsed.data : [];
-    var hdItems = [];
-    var fallbackMp4Items = [];
+    var webpItems = [];
+    var gifFallbackItems = [];
 
     for (var i = 0; i < raw.length; i++) {
       var g = raw[i];
       if (!g || !g.images) continue;
 
-      // Prefer true HD 16:9 MP4 (images.hd.mp4 -> 1080p/720p hardware decoded on TV!)
-      var hd = g.images.hd;
-      if (hd && hd.mp4) {
-        var hw = Number(hd.width || 0);
-        var hh = Number(hd.height || 0);
-        var hRatio = hh > 0 ? (hw / hh) : 0;
-        var hSize = Number(hd.mp4_size || 0);
-        if (hRatio >= 1.38 && hRatio <= 2.2 && (!hSize || hSize <= 12 * 1024 * 1024)) {
-          hdItems.push({
-            type: 'video',
-            source: 'giphy',
-            quality: hw + 'x' + hh,
-            name: g.title || g.id,
-            url: hd.mp4,
-            poster: (g.images.original_still && g.images.original_still.url) || ''
-          });
-          continue;
-        }
+      // IMPORTANT for LG webOS TV: ALWAYS use animated <img> (WebP/GIF), NEVER <video> MP4!
+      // webOS uMediaServer hardware pipeline only permits ONE active <audio>/<video> decoder at a time;
+      // using animated WebP inside <img> plays smoothly with ZERO conflict against Zing MP3 <audio>!
+      var orig = g.images.original;
+      if (!orig) continue;
+      var ow = Number(orig.width || 0);
+      var oh = Number(orig.height || 0);
+      var oRatio = oh > 0 ? (ow / oh) : 0;
+      if (ow < 440 || oRatio < 1.38 || oRatio > 2.2) continue;
+
+      var webpSize = Number(orig.webp_size || 0);
+      if (orig.webp && (!webpSize || webpSize <= 6 * 1024 * 1024)) {
+        webpItems.push({
+          type: 'image',
+          format: 'webp',
+          source: 'giphy',
+          quality: ow + 'x' + oh,
+          name: g.title || g.id,
+          url: orig.webp
+        });
+        continue;
       }
 
-      // Secondary: 16:9 original MP4
-      var orig = g.images.original;
-      if (orig && orig.mp4) {
-        var ow = Number(orig.width || 0);
-        var oh = Number(orig.height || 0);
-        var oRatio = oh > 0 ? (ow / oh) : 0;
-        if (ow >= 480 && oRatio >= 1.45 && oRatio <= 2.2) {
-          fallbackMp4Items.push({
-            type: 'video',
-            source: 'giphy',
-            quality: ow + 'x' + oh,
-            name: g.title || g.id,
-            url: orig.mp4,
-            poster: (g.images.original_still && g.images.original_still.url) || ''
-          });
-        }
+      var gifSize = Number(orig.size || 0);
+      if (orig.url && (!gifSize || gifSize <= 6 * 1024 * 1024)) {
+        gifFallbackItems.push({
+          type: 'image',
+          format: 'gif',
+          source: 'giphy',
+          quality: ow + 'x' + oh,
+          name: g.title || g.id,
+          url: orig.url
+        });
       }
     }
 
-    var finalItems = hdItems.length >= 4 ? hdItems : hdItems.concat(fallbackMp4Items.slice(0, Math.max(0, 10 - hdItems.length)));
+    var finalItems = webpItems.length >= 4 ? webpItems : webpItems.concat(gifFallbackItems.slice(0, Math.max(0, 10 - webpItems.length)));
     if (finalItems.length > 0) {
       giphyCache[query] = { at: now, items: finalItems };
-      writeLog('GIPHY', 'query="' + query + '" -> ' + hdItems.length + ' HD MP4 + ' + (finalItems.length - hdItems.length) + ' SD MP4');
+      writeLog('GIPHY', 'query="' + query + '" -> ' + webpItems.length + ' animated WebP + ' + (finalItems.length - webpItems.length) + ' GIF');
       return sendJson(res, 200, {
         source: 'giphy',
         cached: false,

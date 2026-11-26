@@ -1120,8 +1120,7 @@ html, body {
   transition: background-image 0.8s ease;
 }
 
-.ambient-gif-layer,
-.ambient-video-layer {
+.ambient-gif-layer {
   position: absolute;
   top: 0;
   left: 0;
@@ -1133,8 +1132,7 @@ html, body {
   pointer-events: none;
 }
 
-.ambient-gif-layer.visible,
-.ambient-video-layer.visible {
+.ambient-gif-layer.visible {
   opacity: 1;
 }
 

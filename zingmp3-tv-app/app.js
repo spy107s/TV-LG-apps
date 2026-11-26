@@ -1123,15 +1123,17 @@
       });
   }
 
-  function stopAmbientVideo() {
-    var vid = $('ambient-video');
-    if (!vid) return;
-    vid.classList.remove('visible');
-    try {
-      vid.pause();
-      vid.removeAttribute('src');
-      vid.load();
-    } catch (e) {}
+  function clearAmbientImages() {
+    var imgA = $('ambient-gif-a');
+    var imgB = $('ambient-gif-b');
+    if (imgA) {
+      imgA.classList.remove('visible');
+      imgA.removeAttribute('src');
+    }
+    if (imgB) {
+      imgB.classList.remove('visible');
+      imgB.removeAttribute('src');
+    }
   }
 
   function showNextRandomGif(userClicked) {
@@ -1141,7 +1143,6 @@
         showToast('Đang tải thư viện hình nền...', 2000);
         loadAmbientGifs(true);
       }
-      stopAmbientVideo();
       if ($('ambient-gif-a')) $('ambient-gif-a').classList.remove('visible');
       if ($('ambient-gif-b')) $('ambient-gif-b').classList.remove('visible');
       return;
@@ -1157,31 +1158,8 @@
     state.ambientGifIdx = nextIdx;
     var chosen = list[nextIdx];
 
-    // If item is a GIPHY HD MP4 video, play smoothly on TV hardware decoder
-    if (chosen.type === 'video') {
-      var vid = $('ambient-video');
-      if (vid) {
-        if ($('ambient-gif-a')) $('ambient-gif-a').classList.remove('visible');
-        if ($('ambient-gif-b')) $('ambient-gif-b').classList.remove('visible');
-        vid.oncanplay = function () {
-          if (state.ambientOpen) vid.classList.add('visible');
-        };
-        vid.onerror = function () {
-          // If MP4 fails to load, seamlessly fall back to local Ghibli library
-          if (state.ambientTopic !== 'local') {
-            state.ambientTopic = 'local';
-            state.ambientGifIdx = -1;
-            loadAmbientGifs(true);
-          }
-        };
-        vid.src = chosen.url;
-        vid.play().catch(function () {});
-        return;
-      }
-    }
-
-    // Static Ghibli image crossfade
-    stopAmbientVideo();
+    // Crossfade animated GIPHY WebP/GIF or local Ghibli static wallpaper via <img>
+    // (100% immune to webOS uMediaServer <video>/<audio> hardware slot conflict!)
     var showSlot = state.ambientGifSlot === 'a' ? 'b' : 'a';
     var hideSlot = state.ambientGifSlot;
     state.ambientGifSlot = showSlot;
@@ -1190,11 +1168,22 @@
     var imgHide = $('ambient-gif-' + hideSlot);
     if (!imgShow) return;
 
+    var targetUrl = chosen.url;
     imgShow.onload = function () {
+      if (!state.ambientOpen) return;
       imgShow.classList.add('visible');
       if (imgHide) imgHide.classList.remove('visible');
     };
-    imgShow.src = chosen.url;
+    imgShow.onerror = function () {
+      if (!state.ambientOpen) return;
+      sendClientLog('AMBIENT-IMG-ERR', targetUrl);
+      if (state.ambientTopic !== 'local') {
+        state.ambientTopic = 'local';
+        state.ambientGifIdx = -1;
+        loadAmbientGifs(true);
+      }
+    };
+    imgShow.src = targetUrl;
   }
 
   function initAudioVisualizer() {
@@ -1273,20 +1262,28 @@
     var cx = size / 2;
     var cy = size / 2;
 
-    function drawFrame(nowTs) {
+    function drawFrame() {
       if (!state.ambientOpen) return;
       state.vizRafId = window.requestAnimationFrame(drawFrame);
 
-      // Throttle to ~30fps for smooth, cool, low-CPU playback on LG Smart TV
-      if (nowTs && lastDrawTime && (nowTs - lastDrawTime) < 32) return;
-      lastDrawTime = nowTs || Date.now();
+      // Throttle to ~30fps using a single consistent clock (Date.now) so it NEVER freezes
+      var now = Date.now();
+      if (lastDrawTime && (now - lastDrawTime) < 32) return;
+      lastDrawTime = now;
 
+      state.vizFrameCount = (state.vizFrameCount || 0) + 1;
       ctx.clearRect(0, 0, size, size);
-      framePhase += 0.045;
+
+      var isPlaying = Boolean(audio && !audio.paused && !audio.ended);
+      framePhase += isPlaying ? 0.085 : 0.032;
+
+      if (isPlaying && state.audioCtx && state.audioCtx.state === 'suspended') {
+        try { state.audioCtx.resume(); } catch (e) {}
+      }
 
       var hasLiveAudio = false;
       var bassAvg = 0;
-      if (state.analyser && state.vizData && audio && !audio.paused) {
+      if (state.analyser && state.vizData && isPlaying) {
         state.analyser.getByteFrequencyData(state.vizData);
         for (var s = 0; s < state.vizData.length; s++) {
           if (state.vizData[s] > 2) { hasLiveAudio = true; break; }
@@ -1299,10 +1296,18 @@
         }
       }
 
+      var playTime = isPlaying && audio ? (audio.currentTime || 0) : 0;
       if (!hasLiveAudio) {
-        bassAvg = (Math.sin(framePhase * 1.2) * 0.5 + 0.5) * 0.22;
+        if (isPlaying) {
+          // Energetic musical beat pulse fallback if TV hardware audio bypasses WebAudio Analyser
+          var beat1 = Math.pow(Math.abs(Math.sin(playTime * 3.14159 * 2.05)), 2.2);
+          var beat2 = Math.pow(Math.abs(Math.sin(playTime * 3.14159 * 1.02 + 0.7)), 3);
+          bassAvg = 0.25 + beat1 * 0.45 + beat2 * 0.22;
+        } else {
+          bassAvg = (Math.sin(framePhase * 1.2) * 0.5 + 0.5) * 0.14;
+        }
       }
-      smoothBass = smoothBass * 0.72 + bassAvg * 0.28;
+      smoothBass = smoothBass * 0.68 + bassAvg * 0.32;
 
       var baseR = 96 + smoothBass * 22;
 
@@ -1327,7 +1332,11 @@
         for (var wi = 0; wi <= waveSteps; wi++) {
           var wa = (wi / waveSteps) * Math.PI * 2 - Math.PI / 2;
           var binW = Math.floor((wi % 24) / 24 * (state.vizData ? state.vizData.length * 0.65 : 16));
-          var ampW = hasLiveAudio && state.vizData ? (state.vizData[binW] / 255) : (0.18 + Math.sin(framePhase + wi * 0.5) * 0.1);
+          var ampW = hasLiveAudio && state.vizData
+            ? (state.vizData[binW] / 255)
+            : (isPlaying
+              ? (0.28 + Math.sin(playTime * 6.2 + wi * 0.65) * 0.22 + smoothBass * 0.25)
+              : (0.14 + Math.sin(framePhase + wi * 0.5) * 0.08));
           var ripple = Math.sin(wa * (wLayer === 0 ? 5 : 7) + framePhase * (wLayer === 0 ? 1.8 : -2.3)) * (10 + smoothBass * 18);
           var wr = baseR + 12 + ampW * (34 + wLayer * 14) + ripple;
           var wx = cx + Math.cos(wa) * wr;
@@ -1349,8 +1358,14 @@
           var half = i < barCount / 2 ? i : (barCount - 1 - i);
           var binIdx = Math.min(state.vizData.length - 1, Math.floor((half / (barCount / 2)) * (state.vizData.length * 0.78)));
           norm = state.vizData[binIdx] / 255;
+        } else if (isPlaying) {
+          var sym = i < barCount / 2 ? i : (barCount - 1 - i);
+          var w1 = Math.sin(playTime * 7.8 + sym * 0.38) * 0.5 + 0.5;
+          var w2 = Math.cos(playTime * 4.3 - sym * 0.22) * 0.5 + 0.5;
+          var w3 = Math.sin(playTime * 11.4 + sym * 0.71) * 0.5 + 0.5;
+          norm = Math.min(1, (w1 * 0.42 + w2 * 0.35 + w3 * 0.23) * (0.55 + smoothBass * 0.75));
         } else {
-          norm = (Math.sin(framePhase * 1.5 + i * 0.28) * 0.5 + 0.5) * 0.22 + 0.05;
+          norm = (Math.sin(framePhase * 1.5 + i * 0.28) * 0.5 + 0.5) * 0.14 + 0.04;
         }
 
         // Smooth decay so peaks fall gently like real audio meters
@@ -1429,7 +1444,8 @@
       ctx.restore();
     }
 
-    drawFrame(0);
+    state.vizFrameCount = 0;
+    drawFrame();
   }
 
   function stopVisualizerLoop() {
@@ -1474,7 +1490,7 @@
     clearInterval(state.ambientWeatherTimer);
     clearInterval(state.ambientGifTimer);
     stopVisualizerLoop();
-    stopAmbientVideo();
+    clearAmbientImages();
     focusFirstInActiveScope();
   }
 
