@@ -1040,7 +1040,16 @@ html, body {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65);
 }
 
-/* ===== AMBIENT FULL SCREEN (GIF + WEATHER + CALENDAR + VISUALIZER) ===== */
+/* ===== AMBIENT FULL SCREEN (HD WALLPAPER + WEATHER + CALENDAR + VISUALIZER) ===== */
+/* Hide underlying views while Full Screen is active to save LG TV GPU memory & prevent any bleed-through */
+body.ambient-open .app-body,
+body.ambient-open .mini-player,
+body.ambient-open #playlist-overlay,
+body.ambient-open #player-overlay {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 .ambient-overlay {
   position: fixed;
   top: 0;
@@ -1060,64 +1069,7 @@ html, body {
   left: 0;
   right: 0;
   bottom: 0;
-  overflow: hidden;
-  background: radial-gradient(circle at 20% 20%, #241042 0%, #0b0614 70%);
-}
-
-.aurora-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(85px);
-  opacity: 0.48;
-  animation: orbDrift 18s ease-in-out infinite alternate;
-}
-
-.orb-1 {
-  width: 560px;
-  height: 560px;
-  top: -120px;
-  left: -100px;
-  background: #8b3dff;
-}
-
-.orb-2 {
-  width: 520px;
-  height: 520px;
-  bottom: -140px;
-  right: -80px;
-  background: #ff3e9d;
-  animation-duration: 23s;
-  animation-delay: -5s;
-}
-
-.orb-3 {
-  width: 440px;
-  height: 440px;
-  top: 28%;
-  left: 42%;
-  background: #00c6ff;
-  opacity: 0.28;
-  animation-duration: 27s;
-  animation-delay: -9s;
-}
-
-@keyframes orbDrift {
-  0% { transform: translate(0px, 0px) scale(1); }
-  50% { transform: translate(55px, -35px) scale(1.12); }
-  100% { transform: translate(-45px, 40px) scale(0.95); }
-}
-
-.ambient-album-bg {
-  position: absolute;
-  top: -30px;
-  left: -30px;
-  right: -30px;
-  bottom: -30px;
-  background-size: cover;
-  background-position: center;
-  filter: blur(36px) saturate(1.3);
-  opacity: 0.26;
-  transition: background-image 0.8s ease;
+  background: radial-gradient(circle at 22% 24%, #251145 0%, #0d0718 68%, #07040e 100%);
 }
 
 .ambient-gif-layer {
@@ -1128,7 +1080,7 @@ html, body {
   height: 100%;
   object-fit: cover;
   opacity: 0;
-  transition: opacity 0.9s ease;
+  transition: opacity 0.7s ease;
   pointer-events: none;
 }
 
@@ -1142,18 +1094,18 @@ html, body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: radial-gradient(circle at 50% 48%, rgba(8, 5, 16, 0.14) 0%, rgba(8, 5, 16, 0.48) 70%, rgba(8, 5, 16, 0.80) 100%);
+  background: radial-gradient(circle at 50% 48%, rgba(8, 5, 16, 0.10) 0%, rgba(8, 5, 16, 0.44) 70%, rgba(8, 5, 16, 0.76) 100%);
   pointer-events: none;
 }
 
-/* CENTER CIRCULAR VISUALIZER (NEON CYAN-WHITE RING, TRANSLUCENT OVER BACKGROUND) */
+/* CENTER CIRCULAR VISUALIZER (NEON CYAN-WHITE RING, ULTRA-LIGHT FOR LG TV) */
 .ambient-center-viz {
   position: absolute;
   top: 46%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 420px;
-  height: 420px;
+  width: 390px;
+  height: 390px;
   z-index: 2;
   pointer-events: none;
   opacity: 0.65;
@@ -1163,8 +1115,8 @@ html, body {
 }
 
 .ambient-visualizer-circle {
-  width: 420px;
-  height: 420px;
+  width: 390px;
+  height: 390px;
   display: block;
 }
 
@@ -1176,8 +1128,8 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 14px;
   padding: 20px 26px 18px;
+  overflow: hidden;
 }
 
 .ambient-stage {
@@ -1186,45 +1138,46 @@ html, body {
   display: flex;
   justify-content: space-between;
   align-items: stretch;
-  gap: 24px;
+  overflow: hidden;
+  margin-bottom: 14px;
 }
 
 .ambient-col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
   min-height: 0;
+  overflow: hidden;
 }
 
 .ambient-col-left {
-  width: 316px;
+  width: 320px;
 }
 
 .ambient-col-right {
-  width: 340px;
+  width: 344px;
 }
 
 .ambient-glass {
-  background: rgba(16, 10, 28, 0.56);
+  background: rgba(16, 10, 28, 0.54);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 18px;
   padding: 14px 18px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
 }
 
+/* Translucent 50% glass panels WITHOUT parent opacity<1 compositor trap in Chromium 79 */
 .ambient-translucent-box {
   flex: 1;
   min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: rgba(16, 10, 28, 0.50);
-  opacity: 0.50;
-  transition: opacity 0.2s ease;
+  background: rgba(14, 9, 26, 0.44);
+  border-color: rgba(255, 255, 255, 0.11);
 }
 
-.ambient-translucent-box:hover,
 .ambient-translucent-box:focus-within {
-  opacity: 0.82;
+  background: rgba(16, 10, 28, 0.72);
+  border-color: rgba(194, 115, 237, 0.45);
 }
 
 .amb-box-header {
@@ -1233,27 +1186,30 @@ html, body {
   justify-content: space-between;
   font-size: 14px;
   font-weight: 800;
-  color: var(--accent-bright);
+  color: rgba(212, 165, 255, 0.78);
   padding-bottom: 8px;
   margin-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+  flex-shrink: 0;
 }
 
 .amb-box-count {
   font-size: 12px;
-  color: var(--text-muted);
+  color: rgba(203, 191, 224, 0.72);
+  flex-shrink: 0;
+  margin-left: 8px;
 }
 
 /* Clock & Mini Calendar (Compact) */
 .clock-calendar-card {
   width: 100%;
   flex-shrink: 0;
+  margin-bottom: 12px;
 }
 
 .ambient-clock-row {
   display: flex;
   align-items: baseline;
-  gap: 4px;
   line-height: 1;
   margin-bottom: 4px;
 }
@@ -1264,7 +1220,7 @@ html, body {
   letter-spacing: 1px;
   color: #fff;
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 3px 14px rgba(155, 77, 224, 0.5);
+  margin-right: 4px;
 }
 
 .ambient-sec {
@@ -1298,7 +1254,7 @@ html, body {
 .mini-cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  grid-gap: 2px;
   text-align: center;
 }
 
@@ -1322,17 +1278,15 @@ html, body {
   background: linear-gradient(135deg, var(--accent), var(--pink));
   color: #fff;
   font-weight: 900;
-  box-shadow: 0 2px 10px rgba(255, 93, 177, 0.55);
 }
 
-/* Ambient Album Songs List (50% Translucent) */
+/* Ambient Album Songs List (50% Translucent, Chromium 79 safe block layout — ZERO button collapse/overlap!) */
 .ambient-album-list {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  overflow-x: hidden;
+  display: block;
   padding-right: 4px;
 }
 
@@ -1349,27 +1303,42 @@ html, body {
 .amb-song-row {
   display: flex;
   align-items: center;
-  gap: 10px;
   width: 100%;
-  padding: 7px 10px;
+  height: 48px;
+  min-height: 48px;
+  margin-bottom: 6px;
+  padding: 6px 10px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.05);
   border: 2px solid transparent;
-  color: #f3ecff;
+  color: rgba(243, 236, 255, 0.62);
   text-align: left;
   cursor: pointer;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.amb-song-row:last-child {
+  margin-bottom: 0;
 }
 
 .amb-song-row.playing {
-  background: rgba(155, 77, 224, 0.55);
-  border-color: rgba(255, 93, 177, 0.75);
+  background: rgba(155, 77, 224, 0.42);
+  border-color: rgba(255, 93, 177, 0.68);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.amb-song-row:focus,
+.amb-song-row.tv-focused {
+  color: #ffffff;
 }
 
 .amb-song-num {
   width: 22px;
+  margin-right: 10px;
   font-size: 12px;
   font-weight: 900;
-  color: var(--accent-bright);
+  color: rgba(194, 115, 237, 0.85);
   flex-shrink: 0;
   text-align: center;
 }
@@ -1377,11 +1346,13 @@ html, body {
 .amb-song-text {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
 }
 
 .amb-song-name {
   font-size: 13px;
   font-weight: 800;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1389,7 +1360,8 @@ html, body {
 
 .amb-song-art {
   font-size: 11px;
-  color: #cbbfe0;
+  line-height: 1.25;
+  color: rgba(203, 191, 224, 0.68);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1399,6 +1371,7 @@ html, body {
 .weather-card {
   width: 100%;
   flex-shrink: 0;
+  margin-bottom: 12px;
 }
 
 .weather-loc {
@@ -1411,13 +1384,13 @@ html, body {
 .weather-main-row {
   display: flex;
   align-items: center;
-  gap: 14px;
   margin-bottom: 10px;
 }
 
 .weather-icon {
   font-size: 42px;
   line-height: 1;
+  margin-right: 14px;
 }
 
 .weather-temp {
@@ -1436,7 +1409,7 @@ html, body {
 .weather-stats-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px 12px;
+  grid-gap: 6px 12px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
@@ -1452,19 +1425,17 @@ html, body {
   color: var(--text-muted);
 }
 
-/* Ambient Synced Lyrics Panel (50% Translucent) */
+/* Ambient Synced Lyrics Panel (50% Translucent, Chromium 79 safe block layout) */
 .ambient-lyrics-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  scroll-behavior: smooth;
+  overflow-x: hidden;
   padding-right: 4px;
 }
 
 .ambient-lyrics-list {
-  display: flex;
-  flex-direction: column;
-  gap: 11px;
+  display: block;
   padding: 28px 4px 80px;
 }
 
@@ -1472,20 +1443,19 @@ html, body {
   font-size: 16px;
   font-weight: 700;
   line-height: 1.42;
-  color: rgba(255, 255, 255, 0.55);
-  transition: color 0.2s ease, font-size 0.2s ease;
+  margin-bottom: 11px;
+  color: rgba(255, 255, 255, 0.46);
 }
 
 .amb-lyric-item.active {
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.94);
   font-size: 19px;
   font-weight: 900;
-  text-shadow: 0 2px 14px rgba(194, 115, 237, 0.9);
 }
 
 .amb-lyric-empty {
   font-size: 14px;
-  color: #d6cceb;
+  color: rgba(214, 204, 235, 0.65);
   text-align: center;
   margin-top: 40px;
 }
@@ -1494,8 +1464,7 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  background: rgba(16, 10, 28, 0.58);
+  background: rgba(16, 10, 28, 0.62);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 16px;
   padding: 10px 18px;
@@ -1505,18 +1474,19 @@ html, body {
 .ambient-song-box {
   display: flex;
   align-items: center;
-  gap: 14px;
   min-width: 0;
   width: 30%;
+  margin-right: 16px;
 }
 
 .ambient-cover {
-  width: 54px;
-  height: 54px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid var(--accent-bright);
   flex-shrink: 0;
+  margin-right: 12px;
 }
 
 .ambient-cover.spinning {
@@ -1547,7 +1517,7 @@ html, body {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 12px;
+  margin-right: 16px;
   font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -1556,6 +1526,7 @@ html, body {
 .ambient-progress-track {
   flex: 1;
   height: 7px;
+  margin: 0 10px;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 999px;
   overflow: hidden;
@@ -1565,15 +1536,20 @@ html, body {
   height: 100%;
   width: 0%;
   background: linear-gradient(90deg, var(--accent-bright), var(--pink), var(--cyan));
-  transition: width 0.25s linear;
 }
 
 .ambient-controls {
   display: flex;
   align-items: center;
-  gap: 10px;
   flex-shrink: 0;
-  transition: opacity 0.3s ease;
+}
+
+.ambient-controls > * {
+  margin-left: 8px;
+}
+
+.ambient-controls > *:first-child {
+  margin-left: 0;
 }
 
 .hidden {

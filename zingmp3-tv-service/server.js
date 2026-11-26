@@ -639,7 +639,8 @@ async function handleAmbientMedia(req, res, topicKey) {
 
     var parsed = JSON.parse(r.buf.toString('utf8'));
     var raw = (parsed && Array.isArray(parsed.data)) ? parsed.data : [];
-    var hdItems = [];
+    var fhdItems = [];
+    var uhdItems = [];
 
     for (var i = 0; i < raw.length; i++) {
       var w = raw[i];
@@ -647,18 +648,26 @@ async function handleAmbientMedia(req, res, topicKey) {
       var dimX = Number(w.dimension_x || 0);
       var dimY = Number(w.dimension_y || 0);
       var sizeBytes = Number(w.file_size || 0);
-      // Strict Full HD+ (>= 1920x1080) static images under 4.5MB for fast, crisp TV display
-      if (dimX >= 1920 && dimY >= 1080 && (!sizeBytes || sizeBytes <= 4.5 * 1024 * 1024)) {
-        hdItems.push({
+      var isJpg = String(w.file_type || '').indexOf('jpeg') !== -1 || String(w.path).toLowerCase().indexOf('.jpg') !== -1;
+      // Strict Full HD+ (>= 1920x1080) static images; prefer 1080p/2K JPEGs <= 2.2MB for fast, lag-free LG TV decoding!
+      if (dimX >= 1920 && dimY >= 1080 && (!sizeBytes || sizeBytes <= 3.5 * 1024 * 1024)) {
+        var entry = {
           type: 'image',
           format: String(w.file_type || 'image/jpeg').replace('image/', ''),
           source: 'wallhaven',
           quality: dimX + 'x' + dimY,
           name: w.id,
           url: w.path
-        });
+        };
+        if (dimX <= 2560 && isJpg && (!sizeBytes || sizeBytes <= 2.2 * 1024 * 1024)) {
+          fhdItems.push(entry);
+        } else {
+          uhdItems.push(entry);
+        }
       }
     }
+
+    var hdItems = fhdItems.concat(uhdItems);
 
     if (hdItems.length > 0) {
       giphyCache[query] = { at: now, items: hdItems };

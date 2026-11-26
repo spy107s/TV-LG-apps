@@ -277,22 +277,17 @@
       </div>
     </div>
 
-    <!-- AMBIENT FULL SCREEN OVERLAY (RANDOM GIF + BIÊN HÒA WEATHER + CALENDAR + MUSIC VISUALIZER) -->
+    <!-- AMBIENT FULL SCREEN OVERLAY (HD WALLPAPER + BIÊN HÒA WEATHER + CALENDAR + MUSIC VISUALIZER) -->
     <div id="ambient-overlay" class="ambient-overlay hidden">
-      <!-- Animated Fallback Aurora + Crossfade Random GIF Layers -->
-      <div class="ambient-aurora">
-        <div class="aurora-orb orb-1"></div>
-        <div class="aurora-orb orb-2"></div>
-        <div class="aurora-orb orb-3"></div>
-      </div>
-      <div id="ambient-album-bg" class="ambient-album-bg"></div>
+      <!-- Lightweight static dark gradient base + Crossfade HD Static Wallpapers (zero blur GPU cost!) -->
+      <div class="ambient-aurora"></div>
       <img id="ambient-gif-a" class="ambient-gif-layer" alt="">
       <img id="ambient-gif-b" class="ambient-gif-layer" alt="">
       <div class="ambient-vignette"></div>
 
-      <!-- CENTER CIRCULAR MUSIC VISUALIZER (GLOWING CYAN NEON RING, LIGHTWEIGHT FOR TV) -->
+      <!-- CENTER CIRCULAR MUSIC VISUALIZER (GLOWING CYAN NEON RING, ULTRA-LIGHT FOR TV) -->
       <div class="ambient-center-viz">
-        <canvas id="ambient-visualizer" class="ambient-visualizer-circle" width="420" height="420"></canvas>
+        <canvas id="ambient-visualizer" class="ambient-visualizer-circle" width="360" height="360"></canvas>
       </div>
 
       <div class="ambient-content">

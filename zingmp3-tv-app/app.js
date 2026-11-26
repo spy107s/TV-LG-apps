@@ -833,14 +833,16 @@
     }
 
     var ambBox = $('ambient-lyrics-list');
+    var ambScroll = $('ambient-lyrics-scroll');
     if (ambBox) {
       var aLines = ambBox.querySelectorAll('.amb-lyric-item');
       for (var k = 0; k < aLines.length; k++) {
         aLines[k].classList.toggle('active', k === found);
       }
-      if (found >= 0 && aLines[found] && state.ambientOpen) {
+      if (found >= 0 && aLines[found] && ambScroll && state.ambientOpen) {
         try {
-          aLines[found].scrollIntoView({ behavior: 'smooth', block: 'center' });
+          var targetTop = aLines[found].offsetTop - Math.floor(ambScroll.clientHeight * 0.42);
+          ambScroll.scrollTop = targetTop > 0 ? targetTop : 0;
         } catch (e) {}
       }
     }
@@ -890,7 +892,10 @@
 
     var activeRow = box.querySelector('.amb-song-row.playing');
     if (activeRow && state.ambientOpen) {
-      try { activeRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (e) {}
+      try {
+        var rowTop = activeRow.offsetTop - Math.floor(box.clientHeight * 0.35);
+        box.scrollTop = rowTop > 0 ? rowTop : 0;
+      } catch (e) {}
     }
   }
 
@@ -1172,7 +1177,15 @@
     imgShow.onload = function () {
       if (!state.ambientOpen) return;
       imgShow.classList.add('visible');
-      if (imgHide) imgHide.classList.remove('visible');
+      if (imgHide) {
+        imgHide.classList.remove('visible');
+        // Free old HD texture from LG TV GPU memory right after crossfade finishes
+        setTimeout(function () {
+          if (imgHide && !imgHide.classList.contains('visible')) {
+            imgHide.removeAttribute('src');
+          }
+        }, 800);
+      }
     };
     imgShow.onerror = function () {
       if (!state.ambientOpen) return;
@@ -1223,15 +1236,16 @@
     var ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Lightweight TV-optimized neon cyan-white circular equalizer (~30fps cap, zero heavy shadowBlur)
-    var barCount = 84;
+    // Ultra-lightweight TV-optimized neon cyan-white ring equalizer:
+    // All 64 bars batched into JUST 2 stroke() calls + 1 pre-cached halo gradient -> ~8x faster on LG TV!
+    var barCount = 64;
     if (!state.vizPeaks || state.vizPeaks.length !== barCount) {
       state.vizPeaks = [];
       for (var p = 0; p < barCount; p++) state.vizPeaks.push(0);
     }
 
-    // Fixed zero-allocation particle pool (40 glowing cyan sparks)
-    var maxParticles = 40;
+    // Fixed zero-allocation particle pool (24 glowing cyan sparks)
+    var maxParticles = 24;
     var particles = [];
     for (var pi = 0; pi < maxParticles; pi++) {
       particles.push({ active: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, maxLife: 1, r: 1.5 });
@@ -1244,38 +1258,57 @@
       pt.active = true;
       pt.x = x;
       pt.y = y;
-      var spread = angle + (Math.random() - 0.5) * 0.5;
+      var spread = angle + (Math.random() - 0.5) * 0.48;
       pt.vx = Math.cos(spread) * speed;
       pt.vy = Math.sin(spread) * speed;
       pt.life = 0;
-      pt.maxLife = 22 + Math.floor(Math.random() * 20);
-      pt.r = 1.2 + Math.random() * 1.8;
+      pt.maxLife = 18 + Math.floor(Math.random() * 14);
+      pt.r = 1.3 + Math.random() * 1.4;
     }
 
     var audio = $('tv-audio');
     var framePhase = 0;
     var smoothBass = 0;
     var lastDrawTime = 0;
-    var size = 420;
+    var isWebOS = /Web0S|SmartTV/i.test(navigator.userAgent || '');
+    var frameIntervalMs = isWebOS ? 45 : 32; // ~22fps on LG TV (cool & zero lag), ~30fps on PC
+    var size = 360;
     canvas.width = size;
     canvas.height = size;
     var cx = size / 2;
     var cy = size / 2;
 
+    // Pre-compute unit trig tables once (zero Math.cos/sin inside the 64-bar hot loop!)
+    var barAngles = [];
+    var barCos = [];
+    var barSin = [];
+    for (var t = 0; t < barCount; t++) {
+      var a0 = (t / barCount) * Math.PI * 2 - Math.PI * 0.62;
+      barAngles.push(a0);
+      barCos.push(Math.cos(a0));
+      barSin.push(Math.sin(a0));
+    }
+
+    // Pre-build static radial halo gradient once (avoid per-frame gradient allocation)
+    var haloGrad = ctx.createRadialGradient(cx, cy, 64, cx, cy, 172);
+    haloGrad.addColorStop(0, 'rgba(0, 140, 255, 0)');
+    haloGrad.addColorStop(0.45, 'rgba(0, 210, 255, 0.34)');
+    haloGrad.addColorStop(0.72, 'rgba(56, 189, 248, 0.16)');
+    haloGrad.addColorStop(1, 'rgba(0, 120, 255, 0)');
+
     function drawFrame() {
       if (!state.ambientOpen) return;
       state.vizRafId = window.requestAnimationFrame(drawFrame);
 
-      // Throttle to ~30fps using a single consistent clock (Date.now) so it NEVER freezes
       var now = Date.now();
-      if (lastDrawTime && (now - lastDrawTime) < 32) return;
+      if (lastDrawTime && (now - lastDrawTime) < frameIntervalMs) return;
       lastDrawTime = now;
 
       state.vizFrameCount = (state.vizFrameCount || 0) + 1;
       ctx.clearRect(0, 0, size, size);
 
       var isPlaying = Boolean(audio && !audio.paused && !audio.ended);
-      framePhase += isPlaying ? 0.085 : 0.032;
+      framePhase += isPlaying ? 0.095 : 0.035;
 
       if (isPlaying && state.audioCtx && state.audioCtx.state === 'suspended') {
         try { state.audioCtx.resume(); } catch (e) {}
@@ -1299,7 +1332,6 @@
       var playTime = isPlaying && audio ? (audio.currentTime || 0) : 0;
       if (!hasLiveAudio) {
         if (isPlaying) {
-          // Energetic musical beat pulse fallback if TV hardware audio bypasses WebAudio Analyser
           var beat1 = Math.pow(Math.abs(Math.sin(playTime * 3.14159 * 2.05)), 2.2);
           var beat2 = Math.pow(Math.abs(Math.sin(playTime * 3.14159 * 1.02 + 0.7)), 3);
           bassAvg = 0.25 + beat1 * 0.45 + beat2 * 0.22;
@@ -1309,50 +1341,43 @@
       }
       smoothBass = smoothBass * 0.68 + bassAvg * 0.32;
 
-      var baseR = 96 + smoothBass * 22;
+      var baseR = 82 + smoothBass * 18;
 
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
 
-      // 1. Soft electric cyan atmospheric halo around the ring (1 cheap radial gradient)
-      var haloGrad = ctx.createRadialGradient(cx, cy, baseR * 0.72, cx, cy, baseR + 92);
-      haloGrad.addColorStop(0, 'rgba(0, 140, 255, 0)');
-      haloGrad.addColorStop(0.42, 'rgba(0, 210, 255, ' + (0.28 + smoothBass * 0.24).toFixed(2) + ')');
-      haloGrad.addColorStop(0.68, 'rgba(56, 189, 248, ' + (0.16 + smoothBass * 0.14).toFixed(2) + ')');
-      haloGrad.addColorStop(1, 'rgba(0, 120, 255, 0)');
+      // 1. Pre-cached cyan atmospheric halo (1 fill call, 0 allocations)
       ctx.fillStyle = haloGrad;
       ctx.beginPath();
-      ctx.arc(cx, cy, baseR + 92, 0, Math.PI * 2);
+      ctx.arc(cx, cy, 172, 0, Math.PI * 2);
       ctx.fill();
 
-      // 2. Smooth flowing electric cyan plasma ribbons hugging the outer spectrum
-      for (var wLayer = 0; wLayer < 2; wLayer++) {
-        ctx.beginPath();
-        var waveSteps = 48;
-        for (var wi = 0; wi <= waveSteps; wi++) {
-          var wa = (wi / waveSteps) * Math.PI * 2 - Math.PI / 2;
-          var binW = Math.floor((wi % 24) / 24 * (state.vizData ? state.vizData.length * 0.65 : 16));
-          var ampW = hasLiveAudio && state.vizData
-            ? (state.vizData[binW] / 255)
-            : (isPlaying
-              ? (0.28 + Math.sin(playTime * 6.2 + wi * 0.65) * 0.22 + smoothBass * 0.25)
-              : (0.14 + Math.sin(framePhase + wi * 0.5) * 0.08));
-          var ripple = Math.sin(wa * (wLayer === 0 ? 5 : 7) + framePhase * (wLayer === 0 ? 1.8 : -2.3)) * (10 + smoothBass * 18);
-          var wr = baseR + 12 + ampW * (34 + wLayer * 14) + ripple;
-          var wx = cx + Math.cos(wa) * wr;
-          var wy = cy + Math.sin(wa) * wr;
-          if (wi === 0) ctx.moveTo(wx, wy);
-          else ctx.lineTo(wx, wy);
-        }
-        ctx.closePath();
-        ctx.strokeStyle = wLayer === 0 ? 'rgba(56, 232, 255, 0.42)' : 'rgba(125, 249, 255, 0.25)';
-        ctx.lineWidth = wLayer === 0 ? 2.2 : 1.4;
-        ctx.stroke();
+      // 2. Single lightweight electric cyan plasma ribbon hugging the spectrum
+      ctx.beginPath();
+      var waveSteps = 32;
+      for (var wi = 0; wi <= waveSteps; wi++) {
+        var wa = (wi / waveSteps) * Math.PI * 2 - Math.PI / 2;
+        var binW = Math.floor((wi % 16) / 16 * (state.vizData ? state.vizData.length * 0.65 : 16));
+        var ampW = hasLiveAudio && state.vizData
+          ? (state.vizData[binW] / 255)
+          : (isPlaying
+            ? (0.28 + Math.sin(playTime * 6.2 + wi * 0.7) * 0.20 + smoothBass * 0.24)
+            : (0.14 + Math.sin(framePhase + wi * 0.5) * 0.08));
+        var ripple = Math.sin(wa * 5 + framePhase * 1.8) * (8 + smoothBass * 14);
+        var wr = baseR + 10 + ampW * 30 + ripple;
+        var wx = cx + Math.cos(wa) * wr;
+        var wy = cy + Math.sin(wa) * wr;
+        if (wi === 0) ctx.moveTo(wx, wy);
+        else ctx.lineTo(wx, wy);
       }
+      ctx.closePath();
+      ctx.strokeStyle = 'rgba(56, 232, 255, 0.40)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
 
-      // 3. 84 crisp white-cyan radial equalizer bars pulsing outward from the ring
+      // 3. ALL 64 radial bars batched into ONE path -> ONLY 2 stroke() calls total!
+      ctx.beginPath();
       for (var i = 0; i < barCount; i++) {
-        var angle = (i / barCount) * Math.PI * 2 - Math.PI * 0.62;
         var norm = 0;
         if (hasLiveAudio) {
           var half = i < barCount / 2 ? i : (barCount - 1 - i);
@@ -1360,48 +1385,42 @@
           norm = state.vizData[binIdx] / 255;
         } else if (isPlaying) {
           var sym = i < barCount / 2 ? i : (barCount - 1 - i);
-          var w1 = Math.sin(playTime * 7.8 + sym * 0.38) * 0.5 + 0.5;
-          var w2 = Math.cos(playTime * 4.3 - sym * 0.22) * 0.5 + 0.5;
-          var w3 = Math.sin(playTime * 11.4 + sym * 0.71) * 0.5 + 0.5;
+          var w1 = Math.sin(playTime * 7.8 + sym * 0.44) * 0.5 + 0.5;
+          var w2 = Math.cos(playTime * 4.3 - sym * 0.26) * 0.5 + 0.5;
+          var w3 = Math.sin(playTime * 11.4 + sym * 0.78) * 0.5 + 0.5;
           norm = Math.min(1, (w1 * 0.42 + w2 * 0.35 + w3 * 0.23) * (0.55 + smoothBass * 0.75));
         } else {
-          norm = (Math.sin(framePhase * 1.5 + i * 0.28) * 0.5 + 0.5) * 0.14 + 0.04;
+          norm = (Math.sin(framePhase * 1.5 + i * 0.32) * 0.5 + 0.5) * 0.14 + 0.04;
         }
 
-        // Smooth decay so peaks fall gently like real audio meters
-        var targetLen = 4 + Math.pow(norm, 1.25) * 68;
-        state.vizPeaks[i] = targetLen > state.vizPeaks[i] ? targetLen : (state.vizPeaks[i] * 0.84 + targetLen * 0.16);
+        var targetLen = 4 + Math.pow(norm, 1.25) * 58;
+        state.vizPeaks[i] = targetLen > state.vizPeaks[i] ? targetLen : (state.vizPeaks[i] * 0.82 + targetLen * 0.18);
         var barLen = state.vizPeaks[i];
 
-        var x1 = cx + Math.cos(angle) * (baseR + 3);
-        var y1 = cy + Math.sin(angle) * (baseR + 3);
-        var x2 = cx + Math.cos(angle) * (baseR + 3 + barLen);
-        var y2 = cy + Math.sin(angle) * (baseR + 3 + barLen);
+        var x1 = cx + barCos[i] * (baseR + 3);
+        var y1 = cy + barSin[i] * (baseR + 3);
+        var x2 = cx + barCos[i] * (baseR + 3 + barLen);
+        var y2 = cy + barSin[i] * (baseR + 3 + barLen);
 
-        // Soft cyan outer bar glow
-        ctx.strokeStyle = 'rgba(0, 212, 255, 0.55)';
-        ctx.lineWidth = 5;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
-        ctx.stroke();
 
-        // Hot white-ice inner bar core
-        ctx.strokeStyle = 'rgba(235, 252, 255, 0.95)';
-        ctx.lineWidth = 2.2;
-        ctx.beginPath();
-        ctx.moveTo(x1, y1);
-        ctx.lineTo(x2, y2);
-        ctx.stroke();
-
-        // Emit subtle glowing spark particles from high energy peaks
-        if (barLen > 34 && Math.random() < 0.16) {
-          spawnSpark(x2, y2, angle, 0.9 + norm * 2.1);
+        if (barLen > 30 && Math.random() < 0.14) {
+          spawnSpark(x2, y2, barAngles[i], 0.9 + norm * 1.9);
         }
       }
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(0, 212, 255, 0.55)';
+      ctx.lineWidth = 4.6;
+      ctx.stroke();
 
-      // 4. Update & draw lightweight glowing cyan/white particle embers
+      ctx.strokeStyle = 'rgba(235, 252, 255, 0.94)';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // 4. Batched glowing cyan/white particle embers (1 single fill() call!)
+      ctx.fillStyle = 'rgba(165, 243, 252, 0.72)';
+      ctx.beginPath();
       for (var k = 0; k < maxParticles; k++) {
         var pt = particles[k];
         if (!pt.active) continue;
@@ -1409,34 +1428,28 @@
         if (pt.life >= pt.maxLife) { pt.active = false; continue; }
         pt.x += pt.vx;
         pt.y += pt.vy;
-        pt.vx *= 0.97;
-        pt.vy *= 0.97;
-        var alpha = (1 - pt.life / pt.maxLife) * 0.85;
-        ctx.fillStyle = 'rgba(165, 243, 252, ' + alpha.toFixed(2) + ')';
-        ctx.beginPath();
+        pt.vx *= 0.96;
+        pt.vy *= 0.96;
+        ctx.moveTo(pt.x + pt.r, pt.y);
         ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
-        ctx.fill();
       }
+      ctx.fill();
 
-      // 5. Razor-bright white-hot neon core ring + cyan outer bloom + warm-white flare arc
-      ctx.strokeStyle = 'rgba(0, 215, 255, 0.55)';
-      ctx.lineWidth = 10 + smoothBass * 4;
+      // 5. White-hot neon core ring + cyan outer bloom + comet flare arc
       ctx.beginPath();
       ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(0, 215, 255, 0.55)';
+      ctx.lineWidth = 9 + smoothBass * 3.5;
       ctx.stroke();
 
       ctx.strokeStyle = 'rgba(255, 240, 250, 0.96)';
-      ctx.lineWidth = 4 + smoothBass * 2;
-      ctx.beginPath();
-      ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
+      ctx.lineWidth = 3.6 + smoothBass * 1.6;
       ctx.stroke();
 
-      // Bright energetic comet arc gliding around the ring edge (matches reference glow flare)
       var arcStart = framePhase * 0.45 - 0.3;
       var arcEnd = arcStart + 0.95 + smoothBass * 0.4;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-      ctx.lineWidth = 7 + smoothBass * 5;
-      ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.88)';
+      ctx.lineWidth = 6 + smoothBass * 4;
       ctx.beginPath();
       ctx.arc(cx, cy, baseR + 1, arcStart, arcEnd);
       ctx.stroke();
@@ -1457,6 +1470,7 @@
 
   function openAmbientFullscreen() {
     state.ambientOpen = true;
+    document.body.classList.add('ambient-open');
     $('ambient-overlay').classList.remove('hidden');
     if (state.currentSong) updateNowPlayingMeta(state.currentSong);
     renderAmbientAlbumList();
@@ -1485,6 +1499,7 @@
 
   function closeAmbientFullscreen() {
     state.ambientOpen = false;
+    document.body.classList.remove('ambient-open');
     $('ambient-overlay').classList.add('hidden');
     clearInterval(state.ambientClockTimer);
     clearInterval(state.ambientWeatherTimer);
@@ -1518,8 +1533,10 @@
     state.focusedEl = el;
     el.classList.add('tv-focused');
     try {
-      el.focus({ preventScroll: false });
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      el.focus({ preventScroll: true });
+      if (!el.closest || !el.closest('#ambient-hud-controls')) {
+        el.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'nearest' });
+      }
     } catch (e) {
       el.focus();
     }
