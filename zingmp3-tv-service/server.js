@@ -560,12 +560,12 @@ function listAmbientGifs(hostPrefix) {
   return files;
 }
 
-var GIPHY_TOPIC_MAP = {
-  'rainy': 'rainy night',
-  'lofi': 'lofi chill',
-  'study': 'lofi study',
-  'cozy': 'cozy fireplace',
-  'ghibli-gif': 'studio ghibli scenery'
+var WALLPAPER_TOPIC_MAP = {
+  'rainy': 'rain window',
+  'lofi': 'lofi',
+  'study': 'anime cafe',
+  'cozy': 'fireplace',
+  'ghibli-hd': 'studio ghibli'
 };
 
 async function handleAmbientMedia(req, res, topicKey) {
@@ -573,21 +573,21 @@ async function handleAmbientMedia(req, res, topicKey) {
   var localItems = listAmbientGifs(hostPrefix);
   var topic = String(topicKey || 'rainy').toLowerCase();
 
-  // Explicit offline Ghibli static library or missing GIPHY key
-  if (topic === 'local' || !GIPHY_API_KEY) {
+  // Explicit offline Ghibli static library
+  if (topic === 'local') {
     return sendJson(res, 200, {
       source: 'local',
-      topic: topic === 'local' ? 'local' : topic,
+      topic: 'local',
       items: localItems
     });
   }
 
-  var query = GIPHY_TOPIC_MAP[topic] || 'rainy night';
+  var query = WALLPAPER_TOPIC_MAP[topic] || 'rain window';
   var now = Date.now();
 
-  // If rate-limited recently (within 30 min), immediately fall back to local Ghibli library!
+  // If rate-limited recently (within 15 min), immediately fall back to local Ghibli library
   if (giphyRateLimitedUntil > now) {
-    writeLog('GIPHY', 'Rate-limit cooldown active -> serving local Ghibli library (' + localItems.length + ')');
+    writeLog('WALLPAPER', 'Rate-limit cooldown active -> serving local Ghibli library (' + localItems.length + ')');
     return sendJson(res, 200, {
       source: 'local',
       fallbackReason: 'rate_limit',
@@ -596,11 +596,11 @@ async function handleAmbientMedia(req, res, topicKey) {
     });
   }
 
-  // Return 2-hour cached GIPHY results if fresh (saves API quota!)
+  // Return 2-hour cached HD/2K/4K static wallpapers if fresh
   var cached = giphyCache[query];
   if (cached && (now - cached.at) < 2 * 60 * 60 * 1000 && cached.items.length > 0) {
     return sendJson(res, 200, {
-      source: 'giphy',
+      source: 'wallhaven',
       cached: true,
       topic: topic,
       query: query,
@@ -608,20 +608,23 @@ async function handleAmbientMedia(req, res, topicKey) {
     });
   }
 
-  // Priority 1: Call official GIPHY Search API
+  // Priority 1: Wallhaven Public Static Wallpaper API (TRUE 1920x1080+ Full HD / 2K / 4K, 16:9, SFW)
+  // Note: GIPHY API has ZERO static images >= 1280px (stills are capped at 480-900px) and its HD MP4
+  // conflicts with <audio> on LG webOS TV. Wallhaven delivers crisp 1080p-4K static JPG/PNG with zero conflict!
   try {
     var qs = querystring.stringify({
-      api_key: GIPHY_API_KEY,
       q: query,
-      limit: 50,
-      rating: 'g',
-      lang: 'en'
+      atleast: '1920x1080',
+      ratios: '16x9',
+      purity: '100',
+      sorting: 'favorites',
+      page: '1'
     });
-    var r = await httpsGetBuffer('api.giphy.com', '/v1/gifs/search?' + qs, { 'Referer': '' });
+    var r = await httpsGetBuffer('wallhaven.cc', '/api/v1/search?' + qs, { 'Referer': '' });
 
     if (r.status === 429 || r.status === 403) {
-      giphyRateLimitedUntil = now + 30 * 60 * 1000;
-      writeLog('GIPHY-LIMIT', 'HTTP ' + r.status + ' rate limit -> falling back to local Ghibli library');
+      giphyRateLimitedUntil = now + 15 * 60 * 1000;
+      writeLog('WALLPAPER-LIMIT', 'HTTP ' + r.status + ' rate limit -> falling back to local Ghibli library');
       return sendJson(res, 200, {
         source: 'local',
         fallbackReason: 'rate_limit',
@@ -631,70 +634,47 @@ async function handleAmbientMedia(req, res, topicKey) {
     }
 
     if (r.status !== 200) {
-      throw new Error('GIPHY HTTP ' + r.status);
+      throw new Error('Wallhaven HTTP ' + r.status);
     }
 
     var parsed = JSON.parse(r.buf.toString('utf8'));
     var raw = (parsed && Array.isArray(parsed.data)) ? parsed.data : [];
-    var webpItems = [];
-    var gifFallbackItems = [];
+    var hdItems = [];
 
     for (var i = 0; i < raw.length; i++) {
-      var g = raw[i];
-      if (!g || !g.images) continue;
-
-      // IMPORTANT for LG webOS TV: ALWAYS use animated <img> (WebP/GIF), NEVER <video> MP4!
-      // webOS uMediaServer hardware pipeline only permits ONE active <audio>/<video> decoder at a time;
-      // using animated WebP inside <img> plays smoothly with ZERO conflict against Zing MP3 <audio>!
-      var orig = g.images.original;
-      if (!orig) continue;
-      var ow = Number(orig.width || 0);
-      var oh = Number(orig.height || 0);
-      var oRatio = oh > 0 ? (ow / oh) : 0;
-      if (ow < 440 || oRatio < 1.38 || oRatio > 2.2) continue;
-
-      var webpSize = Number(orig.webp_size || 0);
-      if (orig.webp && (!webpSize || webpSize <= 6 * 1024 * 1024)) {
-        webpItems.push({
+      var w = raw[i];
+      if (!w || !w.path) continue;
+      var dimX = Number(w.dimension_x || 0);
+      var dimY = Number(w.dimension_y || 0);
+      var sizeBytes = Number(w.file_size || 0);
+      // Strict Full HD+ (>= 1920x1080) static images under 4.5MB for fast, crisp TV display
+      if (dimX >= 1920 && dimY >= 1080 && (!sizeBytes || sizeBytes <= 4.5 * 1024 * 1024)) {
+        hdItems.push({
           type: 'image',
-          format: 'webp',
-          source: 'giphy',
-          quality: ow + 'x' + oh,
-          name: g.title || g.id,
-          url: orig.webp
-        });
-        continue;
-      }
-
-      var gifSize = Number(orig.size || 0);
-      if (orig.url && (!gifSize || gifSize <= 6 * 1024 * 1024)) {
-        gifFallbackItems.push({
-          type: 'image',
-          format: 'gif',
-          source: 'giphy',
-          quality: ow + 'x' + oh,
-          name: g.title || g.id,
-          url: orig.url
+          format: String(w.file_type || 'image/jpeg').replace('image/', ''),
+          source: 'wallhaven',
+          quality: dimX + 'x' + dimY,
+          name: w.id,
+          url: w.path
         });
       }
     }
 
-    var finalItems = webpItems.length >= 4 ? webpItems : webpItems.concat(gifFallbackItems.slice(0, Math.max(0, 10 - webpItems.length)));
-    if (finalItems.length > 0) {
-      giphyCache[query] = { at: now, items: finalItems };
-      writeLog('GIPHY', 'query="' + query + '" -> ' + webpItems.length + ' animated WebP + ' + (finalItems.length - webpItems.length) + ' GIF');
+    if (hdItems.length > 0) {
+      giphyCache[query] = { at: now, items: hdItems };
+      writeLog('WALLPAPER', 'query="' + query + '" -> ' + hdItems.length + ' static FullHD/2K/4K images');
       return sendJson(res, 200, {
-        source: 'giphy',
+        source: 'wallhaven',
         cached: false,
         topic: topic,
         query: query,
-        items: finalItems
+        items: hdItems
       });
     }
 
-    throw new Error('No widescreen GIPHY results');
+    throw new Error('No FullHD static wallpaper results');
   } catch (err) {
-    writeLog('GIPHY-ERR', err.message + ' -> falling back to local Ghibli library');
+    writeLog('WALLPAPER-ERR', err.message + ' -> falling back to local Ghibli library');
     return sendJson(res, 200, {
       source: 'local',
       fallbackReason: 'error',

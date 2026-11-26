@@ -1103,7 +1103,7 @@
         state.ambientSource = (data && data.source) || 'local';
         state.ambientGifs = (data && Array.isArray(data.items)) ? data.items : [];
         if (data && data.fallbackReason === 'rate_limit') {
-          showToast('GIPHY tạm hết lượt gọi — tự động chuyển sang thư viện ảnh Ghibli!', 2800);
+          showToast('API hình nền HD tạm hết lượt gọi — tự động chuyển sang thư viện ảnh Ghibli!', 2800);
         }
         if (state.ambientGifs.length > 0 && triggerShow) {
           showNextRandomGif(false);
