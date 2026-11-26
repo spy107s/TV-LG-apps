@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TikTok TV</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="tv-stage" class="tv-stage">
+    <!-- LIGHTWEIGHT AMBIENT NEON BACKDROP (ZERO BLUR GPU COST) -->
+    <div class="stage-glow-left"></div>
+    <div class="stage-glow-right"></div>
+
+    <!-- LEFT SIDEBAR: BRAND + CATEGORIES -->
+    <aside id="left-panel" class="side-panel left-panel">
+      <div class="brand-card">
+        <img src="icon.png" alt="TikTok TV" class="brand-icon">
+        <div class="brand-texts">
+          <div class="brand-title-row">
+            <span class="brand-name">TikTok</span>
+            <span class="brand-tv-pill">TV</span>
+          </div>
+          <div class="brand-sub"><span class="live-dot"></span>Đang phát trực tiếp</div>
+        </div>
+      </div>
+
+      <div class="section-head">
+        <span class="panel-label">Chủ đề nổi bật</span>
+        <span class="panel-badge" id="cat-count-badge">15</span>
+      </div>
+
+      <div id="category-list" class="category-list"></div>
+
+      <div class="left-footer">
+        <button id="btn-reload-feed" class="footer-btn focusable">
+          <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
+          <span>Làm mới nguồn</span>
+        </button>
+        <button id="btn-theater" class="footer-btn theater-btn focusable">
+          <svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+          <span>Chế độ rạp (🔵)</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- CENTER: FLOATING OLED-STYLE 9:16 VERTICAL PHONE STAGE (SINGLE HARDWARE VIDEO ELEMENT) -->
+    <main id="phone-viewport" class="phone-viewport">
+      <video id="tv-video" class="tv-video" playsinline preload="auto"></video>
+
+      <!-- TOP FLOATING PILLS -->
+      <div class="phone-top-bar">
+        <span id="stage-cat-pill" class="stage-pill cat-pill">🔥 Đề xuất</span>
+        <span id="stage-counter" class="stage-pill counter-pill">0 / 0</span>
+      </div>
+
+      <!-- CENTER PLAY/PAUSE & HEART BURST OVERLAYS -->
+      <div id="play-badge" class="play-badge hidden">▶</div>
+      <div id="heart-burst" class="heart-burst hidden">♥</div>
+
+      <!-- LOADING OVERLAY -->
+      <div id="loading-overlay" class="stage-overlay">
+        <div class="tiktok-spinner"></div>
+        <div id="loading-text" class="stage-overlay-text">Đang tải video TikTok...</div>
+      </div>
+
+      <!-- ERROR OVERLAY -->
+      <div id="error-overlay" class="stage-overlay hidden">
+        <div class="error-icon">⚠️</div>
+        <div id="error-text" class="stage-overlay-text">Không tải được video</div>
+        <button id="btn-retry" class="primary-btn focusable">Thử lại ngay</button>
+      </div>
+
+      <!-- RIGHT MOBILE ACTION RAIL WITH CRISP VECTOR SVG ICONS -->
+      <div class="action-rail">
+        <div class="creator-avatar-ring">
+          <img id="meta-avatar" class="creator-avatar" src="icon.png" alt="">
+        </div>
+
+        <button id="btn-like" class="rail-btn focusable" title="Thích / Lưu (Đỏ)">
+          <span class="rail-circle">
+            <svg id="like-svg" class="rail-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+          </span>
+          <span id="like-count" class="rail-count">0</span>
+        </button>
+
+        <button id="btn-comments" class="rail-btn focusable" title="Bình luận (Xanh lá)">
+          <span class="rail-circle">
+            <svg class="rail-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+          </span>
+          <span id="comment-count" class="rail-count">0</span>
+        </button>
+
+        <button id="btn-autonext" class="rail-btn focusable" title="Tự chuyển video (Vàng)">
+          <span class="rail-circle">
+            <svg id="autonext-svg" class="rail-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+          </span>
+          <span id="autonext-label" class="rail-count">Tự lướt</span>
+        </button>
+
+        <button id="btn-mute" class="rail-btn focusable" title="Tắt / Bật tiếng">
+          <span class="rail-circle">
+            <svg id="mute-svg" class="rail-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          </span>
+          <span id="mute-label" class="rail-count">Âm thanh</span>
+        </button>
+
+        <div class="music-disc" id="music-disc">
+          <div class="music-disc-core">♪</div>
+        </div>
+      </div>
+
+      <!-- BOTTOM VIDEO METADATA + TIME + SCRUBBABLE PROGRESS BAR -->
+      <div class="video-meta-gradient"></div>
+      <div class="video-meta">
+        <div class="meta-author-row">
+          <span id="meta-author" class="meta-author">@tiktok</span>
+          <span id="meta-verified" class="verified-badge hidden">✓</span>
+        </div>
+        <div id="meta-desc" class="meta-desc">Đang kết nối kho video TikTok...</div>
+        <div class="meta-bottom-line">
+          <div class="meta-music">
+            <span class="music-note">♫</span>
+            <span id="meta-music-text" class="meta-music-text">Âm thanh gốc</span>
+          </div>
+          <span id="meta-time" class="meta-time">00:00 / 00:00</span>
+        </div>
+      </div>
+
+      <div id="video-progress-track" class="video-progress-track">
+        <div id="video-progress-fill" class="video-progress-fill"></div>
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR: CREATOR DETAILS + UP NEXT QUEUE / LIVE COMMENTS -->
+    <aside id="right-panel" class="side-panel right-panel">
+      <!-- INFO & UP-NEXT PANE (DEFAULT) -->
+      <div id="guide-pane" class="right-pane">
+        <!-- QUICK PLAYBACK CONTROLS -->
+        <div class="control-bar">
+          <button id="btn-prev-video" class="ctrl-btn focusable" title="Video trước (▲)">▲ Trước</button>
+          <button id="btn-play-pause" class="ctrl-btn primary focusable" title="Phát / Tạm dừng (OK)">⏸ Dừng</button>
+          <button id="btn-next-video" class="ctrl-btn focusable" title="Video tiếp (▼)">▼ Tiếp</button>
+        </div>
+
+        <!-- CURRENT VIDEO & CREATOR DETAILS CARD -->
+        <div class="info-card">
+          <div class="creator-card-top">
+            <img id="card-avatar" class="card-avatar" src="icon.png" alt="">
+            <div class="creator-card-names">
+              <div id="card-nickname" class="card-nickname">TikTok Creator</div>
+              <div id="card-handle" class="card-handle">@tiktok</div>
+            </div>
+          </div>
+          <div id="card-full-desc" class="card-full-desc">Đang tải thông tin video...</div>
+          <div class="stats-grid">
+            <div class="stat-pill"><span class="stat-ic">♥</span><strong id="stat-likes">0</strong><span class="stat-lb">Thích</span></div>
+            <div class="stat-pill"><span class="stat-ic">💬</span><strong id="stat-comments">0</strong><span class="stat-lb">Bình luận</span></div>
+            <div class="stat-pill"><span class="stat-ic">↗</span><strong id="stat-shares">0</strong><span class="stat-lb">Chia sẻ</span></div>
+            <div class="stat-pill"><span class="stat-ic">▶</span><strong id="stat-plays">0</strong><span class="stat-lb">Lượt xem</span></div>
+          </div>
+        </div>
+
+        <!-- UP NEXT VIDEO QUEUE -->
+        <div class="section-head" style="margin-top:12px;">
+          <span class="panel-label">Tiếp theo</span>
+          <span class="panel-badge" id="upnext-badge">Sắp phát</span>
+        </div>
+        <div id="upnext-list" class="upnext-list"></div>
+
+        <!-- COMPACT REMOTE SHORTCUT BAR -->
+        <div class="remote-strip">
+          <span class="rs-chip"><b>▲▼</b> Lướt</span>
+          <span class="rs-chip"><b>OK</b> Dừng</span>
+          <span class="rs-chip"><b>🔴</b> Thích</span>
+          <span class="rs-chip"><b>🟢</b> Bình luận</span>
+          <span class="rs-chip"><b>🔵</b> Rạp</span>
+        </div>
+      </div>
+
+      <!-- LIVE COMMENTS PANE -->
+      <div id="comments-pane" class="right-pane hidden">
+        <div class="comments-header">
+          <span id="comments-title" class="comments-title">💬 Bình luận</span>
+          <button id="btn-close-comments" class="small-btn focusable">✕ Đóng</button>
+        </div>
+        <div id="comments-status" class="comments-status hidden">Đang tải bình luận...</div>
+        <div id="comments-list" class="comments-list"></div>
+      </div>
+    </aside>
+
+    <!-- FLOATING EXIT THEATER BUTTON (ONLY VISIBLE IN THEATER MODE) -->
+    <button id="btn-exit-theater" class="exit-theater-btn focusable hidden">☰ Hiện bảng điều khiển (🔵 / BACK)</button>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

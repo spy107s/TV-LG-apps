@@ -1,0 +1,9 @@
+{
+  "id": "com.giadinh.tiktoktv.service",
+  "description": "TikTok TV Local Proxy Service",
+  "services": [
+    {
+      "name": "com.giadinh.tiktoktv.service"
+    }
+  ]
+}

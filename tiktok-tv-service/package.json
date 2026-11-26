@@ -1,0 +1,6 @@
+{
+  "name": "com.giadinh.tiktoktv.service",
+  "version": "1.0.0",
+  "description": "TikTok TV Native webOS Proxy Service",
+  "main": "service.js"
+}
