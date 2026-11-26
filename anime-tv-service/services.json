@@ -1,0 +1,9 @@
+{
+  "id": "com.giadinh.anime47tv.service",
+  "description": "Anime47 TV Local Proxy and AdBlocker Service",
+  "services": [
+    {
+      "name": "com.giadinh.anime47tv.service"
+    }
+  ]
+}

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>LG TV Screen Mirroring Receiver</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #000;
+      color: #fff;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Video Fullscreen */
+    #cast-video {
+      width: 100vw;
+      height: 100vh;
+      object-fit: contain;
+      background: #000;
+      z-index: 10;
+    }
+
+    /* Overlay chờ kết nối */
+    .waiting-overlay {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at center, #1e1b4b 0%, #090a10 70%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 20;
+      transition: opacity 0.5s ease;
+    }
+
+    .waiting-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .radar-pulse {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(139, 92, 246, 0.2);
+      border: 2px solid #8b5cf6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      animation: pulse 1.8s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 35px rgba(139, 92, 246, 0); }
+      100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+    }
+
+    .cast-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 1px;
+    }
+
+    .cast-desc {
+      font-size: 16px;
+      color: #cbd5e1;
+      max-width: 500px;
+      text-align: center;
+      line-height: 1.6;
+    }
+
+    .badge-ip {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    /* Floating Controls khi đang phát */
+    .floating-bar {
+      position: absolute;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      gap: 12px;
+      z-index: 30;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    body:hover .floating-bar,
+    .floating-bar.active {
+      opacity: 1;
+    }
+
+    .float-btn {
+      background: rgba(18, 20, 32, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    }
+
+    .float-btn:hover {
+      background: rgba(139, 92, 246, 0.8);
+      border-color: #8b5cf6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Video Stream từ PC -->
+  <video id="cast-video" autoplay playsinline muted></video>
+
+  <!-- Màn hình chờ khi chưa có tín hiệu -->
+  <div class="waiting-overlay" id="waiting-overlay">
+    <div class="radar-pulse">🖥️</div>
+    <div class="cast-title">LG TV Screen Share</div>
+    <div class="cast-desc">
+      Đang chờ máy tính truyền màn hình qua mạng Wi-Fi...<br>
+      Hãy mở ứng dụng điều khiển trên máy tính và bấm <strong>"Bắt đầu chia sẻ màn hình"</strong>.
+    </div>
+    <div class="badge-ip" id="badge-status">Sẵn sàng nhận tín hiệu WebRTC</div>
+  </div>
+
+  <!-- Nút tiện ích khi đang xem -->
+  <div class="floating-bar" id="floating-bar">
+    <button class="float-btn" id="btn-unmute">🔊 Bật tiếng</button>
+    <button class="float-btn" id="btn-fullscreen">⛶ Toàn màn hình</button>
+  </div>
+
+  <script>
+    const videoEl = document.getElementById('cast-video');
+    const waitingOverlay = document.getElementById('waiting-overlay');
+    const badgeStatus = document.getElementById('badge-status');
+    const btnUnmute = document.getElementById('btn-unmute');
+    const btnFullscreen = document.getElementById('btn-fullscreen');
+    const floatingBar = document.getElementById('floating-bar');
+
+    let pc = null;
+    let ws = null;
+    let isConnected = false;
+
+    function connectWs() {
+      const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${location.host}/cast-ws`;
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        console.log('[TV-Cast] WebSocket kết nối thành công, đăng ký vai trò receiver...');
+        ws.send(JSON.stringify({ role: 'receiver' }));
+        badgeStatus.textContent = '🟢 Đã kết nối với máy chủ - Đang chờ máy tính phát...';
+      };
+
+      ws.onmessage = async (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+
+          if (msg.type === 'offer') {
+            console.log('[TV-Cast] Nhận Offer từ PC, đang khởi tạo WebRTC...');
+            handleOffer(msg.sdp);
+          } else if (msg.type === 'candidate' && pc) {
+            if (msg.candidate) {
+              await pc.addIceCandidate(new RTCIceCandidate(msg.candidate));
+            }
+          } else if (msg.type === 'sender_disconnected' || msg.type === 'stop') {
+            console.log('[TV-Cast] PC đã dừng phát màn hình.');
+            cleanupWebRTC();
+          }
+        } catch (err) {
+          console.error('[TV-Cast] Lỗi xử lý message:', err);
+        }
+      };
+
+      ws.onclose = () => {
+        console.warn('[TV-Cast] WebSocket đóng, thử kết nối lại sau 2 giây...');
+        cleanupWebRTC();
+        setTimeout(connectWs, 2000);
+      };
+    }
+
+    async function handleOffer(sdp) {
+      cleanupWebRTC();
+
+      pc = new RTCPeerConnection({
+        iceServers: [] // Kết nối nội bộ qua host candidate, không cần STUN bên ngoài
+      });
+
+      pc.ontrack = (event) => {
+        console.log('[TV-Cast] Nhận được luồng video/audio từ PC!');
+        videoEl.srcObject = event.streams[0];
+        waitingOverlay.classList.add('hidden');
+        floatingBar.classList.add('active');
+        isConnected = true;
+
+        // Thử phát video
+        videoEl.play().catch(e => console.warn('[TV-Cast] Autoplay block:', e));
+      };
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate && ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            target: 'sender',
+            type: 'candidate',
+            candidate: event.candidate
+          }));
+        }
+      };
+
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          target: 'sender',
+          type: 'answer',
+          sdp: pc.localDescription
+        }));
+      }
+    }
+
+    function cleanupWebRTC() {
+      if (pc) {
+        pc.close();
+        pc = null;
+      }
+      videoEl.srcObject = null;
+      waitingOverlay.classList.remove('hidden');
+      floatingBar.classList.remove('active');
+      isConnected = false;
+      badgeStatus.textContent = 'Sẵn sàng nhận tín hiệu';
+    }
+
+    // Bật/tắt tiếng
+    btnUnmute.addEventListener('click', () => {
+      videoEl.muted = !videoEl.muted;
+      btnUnmute.textContent = videoEl.muted ? '🔇 Tắt tiếng' : '🔊 Đã bật tiếng';
+    });
+
+    // Toàn màn hình
+    btnFullscreen.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    // Chạm màn hình hoặc bấm OK để bật tiếng
+    document.addEventListener('click', () => {
+      if (videoEl.muted && isConnected) {
+        videoEl.muted = false;
+        btnUnmute.textContent = '🔊 Đã bật tiếng';
+      }
+    });
+
+    connectWs();
+  </script>
+</body>
+</html>

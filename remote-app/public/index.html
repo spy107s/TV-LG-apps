@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#12121a">
+  <title>LG Magic Remote</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ─── TOP STATUS BAR ────────────────────────────────────── -->
+  <header class="top-bar">
+    <div class="brand">
+      <span class="brand-logo">LG</span>
+      <span class="brand-title">Magic Remote</span>
+    </div>
+    
+    <div class="status-pill" id="status-pill" title="Bấm để cấu hình kết nối">
+      <span class="status-dot disconnected" id="status-dot"></span>
+      <span class="status-text" id="status-text">Chưa kết nối</span>
+      <button class="settings-btn" id="open-settings-btn" aria-label="Cài đặt">⚙️</button>
+    </div>
+  </header>
+
+  <!-- ─── PAIRING / NOTIFICATION BANNER ──────────────────────── -->
+  <div class="banner hidden" id="status-banner">
+    <div class="banner-icon">⚠️</div>
+    <div class="banner-content">
+      <div class="banner-title" id="banner-title">Thông báo</div>
+      <div class="banner-desc" id="banner-desc">Đang kết nối...</div>
+    </div>
+  </div>
+
+  <!-- ─── NAVIGATION TABS ───────────────────────────────────── -->
+  <nav class="nav-tabs four-tabs">
+    <button class="nav-tab-btn active" data-tab="tab-remote">📱 Remote</button>
+    <button class="nav-tab-btn" data-tab="tab-trackpad">🖱️ Chuột</button>
+    <button class="nav-tab-btn" data-tab="tab-keyboard">⌨️ Gõ chữ</button>
+    <button class="nav-tab-btn" data-tab="tab-screenshare">🖥️ Chiếu màn hình</button>
+  </nav>
+
+  <main class="remote-wrapper">
+    <div class="remote-body">
+
+      <!-- ─── TAB 1: REMOTE ĐIỀU KHIỂN CHUẨN ────────────────── -->
+      <div class="tab-pane active" id="tab-remote">
+
+        <!-- ─── ROW 1: POWER & QUICK BUTTONS ──────────────────── -->
+        <section class="btn-row top-controls">
+        <button class="remote-btn btn-power-on" id="btn-power-on" title="Bật TV (Wake-on-LAN)">
+          <span class="btn-icon">⚡</span>
+          <span class="btn-label">Bật TV</span>
+        </button>
+
+        <button class="remote-btn btn-mute" data-button="MUTE" title="Tắt tiếng">
+          <span class="btn-icon">🔇</span>
+          <span class="btn-label">Mute</span>
+        </button>
+
+        <button class="remote-btn btn-menu" data-button="MENU" title="Cài đặt nhanh TV">
+          <span class="btn-icon">📋</span>
+          <span class="btn-label">Menu</span>
+        </button>
+
+        <button class="remote-btn btn-power-off" id="btn-power-off" title="Tắt TV">
+          <span class="btn-icon">⏻</span>
+          <span class="btn-label">Tắt TV</span>
+        </button>
+      </section>
+
+      <!-- ─── ROW 2: D-PAD NAVIGATION ────────────────────────── -->
+      <section class="dpad-section">
+        <div class="dpad-container">
+          <button class="dpad-btn dpad-up" data-button="UP" aria-label="Lên">
+            <span>▲</span>
+          </button>
+          
+          <button class="dpad-btn dpad-left" data-button="LEFT" aria-label="Trái">
+            <span>◀</span>
+          </button>
+          
+          <button class="dpad-btn dpad-center" data-button="ENTER" aria-label="OK">
+            <span class="ok-text">OK</span>
+          </button>
+          
+          <button class="dpad-btn dpad-right" data-button="RIGHT" aria-label="Phải">
+            <span>▶</span>
+          </button>
+          
+          <button class="dpad-btn dpad-down" data-button="DOWN" aria-label="Xuống">
+            <span>▼</span>
+          </button>
+        </div>
+
+        <div class="dpad-side-controls">
+          <button class="remote-btn btn-back" data-button="BACK" title="Quay lại">
+            <span class="btn-icon">↩</span>
+            <span class="btn-label">Back</span>
+          </button>
+
+          <button class="remote-btn btn-home" data-button="HOME" title="Trang chủ webOS">
+            <span class="btn-icon">🏠</span>
+            <span class="btn-label">Home</span>
+          </button>
+
+          <button class="remote-btn btn-exit" data-button="EXIT" title="Thoát ứng dụng">
+            <span class="btn-icon">✕</span>
+            <span class="btn-label">Exit</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ─── ROW 3: VOLUME & CHANNEL ROCKERS ────────────────── -->
+      <section class="rockers-section">
+        <!-- Cột Âm lượng -->
+        <div class="rocker-column">
+          <button class="rocker-btn rocker-up" data-button="VOLUMEUP" aria-label="Tăng âm lượng">
+            <span>+</span>
+          </button>
+          <div class="rocker-label">VOL</div>
+          <button class="rocker-btn rocker-down" data-button="VOLUMEDOWN" aria-label="Giảm âm lượng">
+            <span>−</span>
+          </button>
+        </div>
+
+        <!-- Trung tâm: Media mini -->
+        <div class="center-media-group">
+          <button class="media-btn" id="btn-play" title="Phát">▶</button>
+          <button class="media-btn" id="btn-pause" title="Tạm dừng">⏸</button>
+          <button class="media-btn" id="btn-live-tv" data-button="LIVE_TV" title="Truyền hình">📺</button>
+          <button class="media-btn" id="btn-search" data-button="SEARCH" title="Tìm kiếm">🔍</button>
+        </div>
+
+        <!-- Cột Kênh TV -->
+        <div class="rocker-column">
+          <button class="rocker-btn rocker-up" data-button="CHANNELUP" aria-label="Kênh tiếp theo">
+            <span>▲</span>
+          </button>
+          <div class="rocker-label">CH</div>
+          <button class="rocker-btn rocker-down" data-button="CHANNELDOWN" aria-label="Kênh trước đó">
+            <span>▼</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ─── ROW 4: QUICK APP LAUNCHERS ─────────────────────── -->
+      <section class="apps-section">
+        <div class="section-title">Ứng dụng nhanh</div>
+        <div class="apps-grid">
+          <button class="app-btn app-youtube" data-app="org.webosbrew.youtubeadfree">
+            <span class="app-logo">▶</span>
+            <span class="app-name">YT AdFree</span>
+          </button>
+
+          <button class="app-btn app-netflix" data-app="com.giadinh.rophimtv" style="background: linear-gradient(135deg, #272d42, #11131c); border: 1px solid #ffd875;">
+            <span class="app-logo" style="color: #ffd875;">▶</span>
+            <span class="app-name">RoPhim TV</span>
+          </button>
+
+          <button class="app-btn app-netflix" data-app="com.giadinh.anime47tv" style="background: linear-gradient(135deg, #ff3b5c, #ff7b54);">
+            <span class="app-logo">A47</span>
+            <span class="app-name">Anime47 TV</span>
+          </button>
+
+          <button class="app-btn app-netflix" data-app="netflix">
+            <span class="app-logo">N</span>
+            <span class="app-name">Netflix</span>
+          </button>
+
+          <button class="app-btn app-browser" data-app="com.webos.app.browser">
+            <span class="app-logo">🌐</span>
+            <span class="app-name">Trình duyệt</span>
+          </button>
+
+          <button class="app-btn app-spotify" data-app="spotify-beats-app">
+            <span class="app-logo">🎧</span>
+            <span class="app-name">Spotify</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ─── ROW 5: PHÍM MÀU (RED, GREEN, YELLOW, BLUE) ─────── -->
+      <section class="color-keys-section">
+        <button class="color-key key-red" data-button="RED" aria-label="Đỏ"></button>
+        <button class="color-key key-green" data-button="GREEN" aria-label="Xanh lá"></button>
+        <button class="color-key key-yellow" data-button="YELLOW" aria-label="Vàng"></button>
+        <button class="color-key key-blue" data-button="BLUE" aria-label="Xanh dương"></button>
+      </section>
+
+      <!-- ─── ROW 6: TIỆN ÍCH BỔ SUNG (BÀN PHÍM SỐ & GỬI TEXT) ─ -->
+      <section class="extra-controls">
+        <button class="expand-toggle-btn" id="toggle-numpad-btn">
+          <span>🔢 Bàn phím số</span>
+          <span class="chevron">▼</span>
+        </button>
+
+        <div class="numpad-container hidden" id="numpad-container">
+          <div class="numpad-grid">
+            <button class="num-btn" data-button="1">1</button>
+            <button class="num-btn" data-button="2">2</button>
+            <button class="num-btn" data-button="3">3</button>
+            <button class="num-btn" data-button="4">4</button>
+            <button class="num-btn" data-button="5">5</button>
+            <button class="num-btn" data-button="6">6</button>
+            <button class="num-btn" data-button="7">7</button>
+            <button class="num-btn" data-button="8">8</button>
+            <button class="num-btn" data-button="9">9</button>
+            <button class="num-btn" data-button="DASH">−</button>
+            <button class="num-btn" data-button="0">0</button>
+            <button class="num-btn" data-button="ENTER">↵</button>
+          </div>
+        </div>
+
+        <div class="toast-sender">
+          <input type="text" id="inp-toast" placeholder="Nhập tin nhắn hiện lên TV..." maxlength="80">
+          <button class="toast-btn" id="btn-send-toast">Gửi lên TV 📨</button>
+        </div>
+      </section>
+      </div> <!-- end #tab-remote -->
+
+      <!-- ─── TAB 2: BÀN RÊ CHUỘT (TRACKPAD) ────────────────── -->
+      <div class="tab-pane hidden" id="tab-trackpad">
+        <section class="trackpad-wrapper">
+          <div class="trackpad-header">
+            <span class="trackpad-title">Bàn rê chuột cảm ứng</span>
+            <button class="trackpad-wake-btn" id="btn-wake-pointer" title="Lắc chuột để hiện con trỏ trên TV">✨ Hiện con trỏ</button>
+          </div>
+
+          <div class="trackpad-surface" id="trackpad-surface">
+            <div class="trackpad-center-guide">
+              <span class="trackpad-icon">🖱️</span>
+              <span class="trackpad-guide-text">Rê ngón tay để di chuột<br>Chạm (Tap) nhẹ để Click chọn</span>
+            </div>
+          </div>
+
+          <div class="trackpad-actions">
+            <button class="trackpad-action-btn btn-left-click" id="btn-mouse-left-click">
+              <span class="action-icon">🖱️</span>
+              <span class="action-label">Chuột trái</span>
+            </button>
+
+            <div class="scroll-rocker">
+              <button class="scroll-btn" id="btn-scroll-up" title="Cuộn trang lên">▲ Cuộn lên</button>
+              <button class="scroll-btn" id="btn-scroll-down" title="Cuộn trang xuống">▼ Cuộn xuống</button>
+            </div>
+
+            <button class="trackpad-action-btn btn-right-click" data-button="BACK" title="Quay lại">
+              <span class="action-icon">↩</span>
+              <span class="action-label">Quay lại</span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <!-- ─── TAB 3: BÀN PHÍM GÕ CHỮ & MỞ WEB ───────────────── -->
+      <div class="tab-pane hidden" id="tab-keyboard">
+        <section class="keyboard-wrapper">
+          <!-- 1. Mở trang Web trực tiếp trên TV -->
+          <div class="web-launcher-card">
+            <div class="card-title">🌐 Mở nhanh trang Web trên TV</div>
+            <div class="web-input-group">
+              <input type="text" id="inp-web-url" placeholder="Nhập địa chỉ web (VD: vnexpress.net, google.com)..." autocomplete="off">
+              <button class="btn-open-web" id="btn-open-web">Mở Web 🚀</button>
+            </div>
+
+            <div class="quick-sites-label">Gợi ý truy cập nhanh:</div>
+            <div class="quick-sites-grid">
+              <button class="quick-site-btn" data-url="https://www.google.com">🔍 Google</button>
+              <button class="quick-site-btn" data-url="https://www.youtube.com">▶️ YouTube</button>
+              <button class="quick-site-btn" data-url="https://vnexpress.net">📰 VnExpress</button>
+              <button class="quick-site-btn" data-url="https://dantri.com.vn">📰 Dân Trí</button>
+              <button class="quick-site-btn" data-url="https://facebook.com">👥 Facebook</button>
+              <button class="quick-site-btn" data-url="https://chatgpt.com">🤖 ChatGPT</button>
+            </div>
+          </div>
+
+          <!-- 2. Gõ chữ vào ô tìm kiếm trên TV -->
+          <div class="typing-card">
+            <div class="card-title">⌨️ Gõ chữ lên TV (Tìm kiếm / Nhập liệu)</div>
+            <textarea id="inp-tv-text" rows="3" placeholder="Gõ hoặc dán nội dung bạn muốn điền vào ô tìm kiếm trên TV tại đây..."></textarea>
+            
+            <div class="typing-actions">
+              <button class="btn-type-send" id="btn-send-text">Gửi toàn bộ chữ ↵</button>
+              <button class="btn-type-enter" id="btn-send-enter">Phím Enter ↵</button>
+              <button class="btn-type-backspace" id="btn-send-backspace">⌫ Xóa (Backspace)</button>
+              <button class="btn-type-clear" id="btn-clear-text">Xóa ô gõ</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- ─── TAB 4: CHIA SẺ MÀN HÌNH (SCREEN SHARE) ────────── -->
+      <div class="tab-pane hidden" id="tab-screenshare">
+        <section class="cast-wrapper">
+          <!-- Card 1: WebRTC Screen Sharing -->
+          <div class="cast-card">
+            <div class="card-header-row">
+              <span class="card-title">🖥️ Chiếu màn hình qua WebRTC</span>
+              <span class="cast-status-pill idle" id="cast-status-pill">Chưa phát</span>
+            </div>
+
+            <p class="cast-desc-text">
+              Truyền trực tiếp toàn bộ màn hình, cửa sổ ứng dụng hoặc tab Chrome từ máy tính lên TV LG qua Wi-Fi nội bộ.
+            </p>
+
+            <div class="cast-preview-box hidden" id="cast-preview-box">
+              <video id="cast-preview-video" autoplay playsinline muted></video>
+              <div class="preview-badge">🔴 ĐANG PHÁT LÊN TV</div>
+            </div>
+
+            <div class="cast-buttons-grid">
+              <button class="btn-start-cast" id="btn-start-cast">
+                <span class="btn-icon">▶</span>
+                <span>Bắt đầu chia sẻ màn hình 🖥️</span>
+              </button>
+
+              <button class="btn-stop-cast hidden" id="btn-stop-cast">
+                <span class="btn-icon">⏹</span>
+                <span>Dừng chia sẻ màn hình</span>
+              </button>
+
+              <button class="btn-open-tv-cast" id="btn-open-tv-cast" title="Mở trang nhận trên TV nếu TV chưa tự mở">
+                <span>📺 Mở màn hình nhận trên TV</span>
+              </button>
+            </div>
+
+            <div class="cast-options">
+              <label class="cast-checkbox-label">
+                <input type="checkbox" id="chk-share-audio" checked>
+                <span>Chia sẻ cả âm thanh máy tính (Audio)</span>
+              </label>
+              <label class="cast-checkbox-label">
+                <input type="checkbox" id="chk-high-fps" checked>
+                <span>Chất lượng mượt mà 60 FPS</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Card 2: Windows Miracast Shortcut & Guide -->
+          <div class="miracast-card">
+            <div class="card-title">📡 Kết nối không dây Miracast (Gốc của TV)</div>
+            <p class="miracast-desc">
+              Tính năng truyền màn hình không dây có sẵn của Windows 10/11 với độ trễ cực thấp (phù hợp chơi game và xem phim 4K).
+            </p>
+            <div class="shortcut-box">
+              <div class="shortcut-keys">
+                <span class="shortcut-key">⊞ Win</span> + <span class="shortcut-key">K</span>
+              </div>
+              <div class="shortcut-desc">Nhấn tổ hợp phím này trên bàn phím máy tính để mở menu Kết nối không dây, sau đó chọn TV LG của bạn.</div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- ─── MODAL CÀI ĐẶT KẾT NỐI (SETTINGS) ───────────────────── -->
+  <div class="modal-overlay hidden" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ Cài đặt kết nối TV LG</h3>
+        <button class="modal-close-btn" id="close-settings-btn">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="inp-tv-ip">Địa chỉ IP của TV (Bắt buộc):</label>
+          <input type="text" id="inp-tv-ip" placeholder="Ví dụ: 192.168.1.50" autocomplete="off">
+          <small class="hint">Đang để trống. Bạn hãy kiểm tra IP trên TV và điền vào đây.</small>
+        </div>
+
+        <div class="form-group">
+          <label for="inp-tv-mac">Địa chỉ MAC của TV (Dùng để quét IP & Bật TV):</label>
+          <div class="input-with-btn">
+            <input type="text" id="inp-tv-mac" placeholder="Ví dụ: AA:BB:CC:DD:EE:FF">
+            <button type="button" class="btn-scan" id="btn-auto-scan" title="Tự động dò IP của TV qua địa chỉ MAC">🔍 Quét IP</button>
+          </div>
+          <small class="hint">Bấm nút "🔍 Quét IP" để tự động tìm IP TV mà không cần tra cứu thủ công.</small>
+        </div>
+
+        <div class="guide-box">
+          <div class="guide-title">📌 Cách tìm IP & MAC trên TV LG:</div>
+          <ol class="guide-steps">
+            <li>Bấm nút <strong>Cài đặt (Bánh răng)</strong> trên remote TV.</li>
+            <li>Chọn <strong>Tất cả cài đặt (All Settings)</strong> → <strong>Mạng (Network)</strong> → <strong>Kết nối Wi-Fi</strong>.</li>
+            <li>Chọn <strong>Cài đặt Wi-Fi nâng cao (Advanced Wi-Fi Settings)</strong> để xem <strong>Địa chỉ IP</strong> và <strong>Địa chỉ MAC</strong>.</li>
+            <li><strong>Lưu ý quan trọng:</strong> Vào mục <em>Thiết bị (Devices) → Thiết bị ngoài → Bật "LG Connect Apps"</em> (hoặc Kết nối ứng dụng điện thoại).</li>
+          </ol>
+        </div>
+
+        <div id="modal-msg" class="modal-msg hidden"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-cancel" id="btn-cancel-settings">Đóng</button>
+        <button class="btn-save" id="btn-save-settings">Lưu & Kết nối 🚀</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification nhỏ trong Web -->
+  <div class="toast-popup" id="toast-popup"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

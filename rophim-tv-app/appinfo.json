@@ -1,0 +1,19 @@
+{
+  "id": "com.giadinh.rophimtv",
+  "version": "1.0.1",
+  "vendor": "GiaDinh",
+  "type": "web",
+  "main": "index.html",
+  "title": "RoPhim TV",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "mediumLargeIcon": "mediumLargeIcon.png",
+  "extraLargeIcon": "extraLargeIcon.png",
+  "iconColor": "#11131c",
+  "bgColor": "#11131c",
+  "resolution": "1920x1080",
+  "uiRevision": 2,
+  "disableBackHistoryAPI": true,
+  "handlesRelaunch": true,
+  "requiredACG": []
+}

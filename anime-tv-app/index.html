@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Anime47 TV - LG webOS</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="hls.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Left TV Navigation Rail -->
+    <aside id="sidebar" class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">A47</div>
+        <div class="brand-text">
+          <span class="brand-title">ANIME47</span>
+          <span class="brand-sub">LG TV EDITION</span>
+        </div>
+      </div>
+
+      <nav class="nav-list" role="navigation">
+        <button class="nav-item focusable active" data-nav="home" data-group="sidebar">
+          <span class="nav-icon">🏠</span>
+          <span class="nav-label">Trang chủ</span>
+        </button>
+        <button class="nav-item focusable" data-nav="top-viewed" data-group="sidebar">
+          <span class="nav-icon">⭐</span>
+          <span class="nav-label">Xem nhiều</span>
+        </button>
+        <button class="nav-item focusable" data-nav="season" data-group="sidebar">
+          <span class="nav-icon">🗓️</span>
+          <span class="nav-label">Mùa</span>
+        </button>
+        <button class="nav-item focusable" data-nav="search" data-group="sidebar">
+          <span class="nav-icon">🔍</span>
+          <span class="nav-label">Tìm kiếm</span>
+        </button>
+        <button class="nav-item focusable" data-nav="history" data-group="sidebar">
+          <span class="nav-icon">🕒</span>
+          <span class="nav-label">Đã xem</span>
+        </button>
+        <button class="nav-item focusable" data-nav="account" data-group="sidebar">
+          <span class="nav-icon">👤</span>
+          <span class="nav-label" id="nav-account-label">Đăng nhập</span>
+        </button>
+        <button class="nav-item focusable" data-nav="settings" data-group="sidebar">
+          <span class="nav-icon">⚙️</span>
+          <span class="nav-label">Cài đặt</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="status-dot" id="auth-status-dot"></div>
+        <span id="auth-status-text">Chưa đăng nhập</span>
+      </div>
+    </aside>
+
+    <!-- Main Content Viewport -->
+    <main id="main-content" class="main-content">
+      <!-- HOME VIEW -->
+      <section id="view-home" class="view active">
+        <!-- Hero Banner -->
+        <div id="hero-banner" class="hero-banner">
+          <div class="hero-backdrop" id="hero-backdrop"></div>
+          <div class="hero-gradient"></div>
+          <div class="hero-info">
+            <span class="hero-badge" id="hero-badge">NỔI BẬT</span>
+            <h1 class="hero-title" id="hero-title">Đang tải Anime47...</h1>
+            <p class="hero-desc" id="hero-desc">Vui lòng đợi trong giây lát...</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary focusable" id="hero-play-btn" data-group="hero">
+                ▶ Xem ngay
+              </button>
+              <button class="btn btn-secondary focusable" id="hero-next-btn" data-group="hero">
+                ↻ Phim khác
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Trending Row -->
+        <div class="section-block">
+          <h2 class="section-title">🔥 Đang Thịnh Hành</h2>
+          <div id="row-trending" class="card-row" data-row="trending"></div>
+        </div>
+
+        <!-- Latest Episodes Grid -->
+        <div class="section-block">
+          <h2 class="section-title">⚡ Tập Mới Cập Nhật</h2>
+          <div id="grid-latest" class="card-grid" data-row="latest"></div>
+        </div>
+      </section>
+
+      <!-- TOP VIEWED VIEW (Xem nhiều nhất: Hôm nay / Tuần / Tháng / Năm) -->
+      <section id="view-top-viewed" class="view">
+        <div class="view-tab-header">
+          <h2 class="section-title" style="margin-bottom: 0;">⭐ Xem nhiều nhất</h2>
+          <div class="sub-tabs" id="top-viewed-tabs">
+            <button class="sub-tab focusable active" data-period="day">Hôm nay</button>
+            <button class="sub-tab focusable" data-period="week">Tuần</button>
+            <button class="sub-tab focusable" data-period="month">Tháng</button>
+            <button class="sub-tab focusable" data-period="year">Năm</button>
+          </div>
+        </div>
+        <div id="top-viewed-status" class="status-message hidden"></div>
+        <div id="list-top-viewed" class="rank-list"></div>
+      </section>
+
+      <!-- SEASON VIEW (Mùa: Tất cả / Mùa này / Mùa trước / Cũ hơn) -->
+      <section id="view-season" class="view">
+        <div class="view-tab-header">
+          <h2 class="section-title" style="margin-bottom: 0;">🗓️ Anime theo mùa</h2>
+          <div class="sub-tabs" id="season-tabs">
+            <button class="sub-tab focusable active" data-season="all">Tất cả</button>
+            <button class="sub-tab focusable" data-season="current">Mùa này</button>
+            <button class="sub-tab focusable" data-season="last">Mùa trước</button>
+            <button class="sub-tab focusable" data-season="older">Cũ hơn</button>
+          </div>
+        </div>
+        <div id="season-status" class="status-message hidden"></div>
+        <div id="grid-season" class="card-grid"></div>
+      </section>
+
+      <!-- SEARCH VIEW -->
+      <section id="view-search" class="view">
+        <div class="search-header">
+          <h2 class="section-title">🔍 Tìm kiếm Anime</h2>
+          <div class="search-bar">
+            <input type="text" id="search-input" class="tv-input focusable" placeholder="Nhập tên anime (VD: One Piece, Naruto, Conan...)" data-group="search-bar" autocomplete="off">
+            <button id="search-submit-btn" class="btn btn-primary focusable" data-group="search-bar">Tìm</button>
+            <button id="search-clear-btn" class="btn btn-secondary focusable" data-group="search-bar">Xóa</button>
+          </div>
+          <div class="quick-tags" id="quick-tags">
+            <button class="tag-btn focusable" data-tag="One Piece">One Piece</button>
+            <button class="tag-btn focusable" data-tag="Naruto">Naruto</button>
+            <button class="tag-btn focusable" data-tag="Conan">Conan</button>
+            <button class="tag-btn focusable" data-tag="Slime">Slime</button>
+            <button class="tag-btn focusable" data-tag="Solo Leveling">Solo Leveling</button>
+            <button class="tag-btn focusable" data-tag="Jujutsu">Jujutsu Kaisen</button>
+          </div>
+        </div>
+        <div id="search-status" class="status-message"></div>
+        <div id="grid-search" class="card-grid"></div>
+      </section>
+
+      <!-- HISTORY VIEW -->
+      <section id="view-history" class="view">
+        <div class="section-header-row">
+          <h2 class="section-title">🕒 Lịch sử xem trên TV</h2>
+          <button id="clear-history-btn" class="btn btn-secondary focusable">Xóa lịch sử</button>
+        </div>
+        <div id="history-empty" class="status-message hidden">Bạn chưa xem tập phim nào.</div>
+        <div id="grid-history" class="card-grid"></div>
+      </section>
+
+      <!-- ACCOUNT VIEW -->
+      <section id="view-account" class="view">
+        <div class="panel-card">
+          <h2 class="section-title">👤 Tài khoản Anime47</h2>
+          <p class="panel-desc">
+            Anime47 hiện bật chế độ yêu cầu đăng nhập (<code>PRIVATE_MODE</code>) để xem chi tiết tập phim và phát video.
+            Đăng nhập 1 lần tại đây, TV sẽ tự động lưu phiên đăng nhập cho các lần sau.
+          </p>
+
+          <div id="account-logged-out">
+            <div class="form-group">
+              <label for="login-user">Email hoặc Tên đăng nhập</label>
+              <input type="text" id="login-user" class="tv-input focusable" placeholder="Nhập email hoặc username...">
+            </div>
+            <div class="form-group">
+              <label for="login-pass">Mật khẩu</label>
+              <input type="password" id="login-pass" class="tv-input focusable" placeholder="Nhập mật khẩu...">
+            </div>
+            <div class="form-actions">
+              <button id="login-submit-btn" class="btn btn-primary focusable">Đăng nhập Anime47</button>
+            </div>
+            <div id="login-message" class="status-message"></div>
+          </div>
+
+          <div id="account-logged-in" class="hidden">
+            <div class="user-profile-box">
+              <div class="user-avatar" id="user-avatar">U</div>
+              <div>
+                <div class="user-name" id="user-display-name">Người dùng</div>
+                <div class="user-email" id="user-display-email"></div>
+              </div>
+            </div>
+            <button id="logout-btn" class="btn btn-danger focusable">Đăng xuất</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- SETTINGS VIEW -->
+      <section id="view-settings" class="view">
+        <div class="panel-card">
+          <h2 class="section-title">⚙️ Cài đặt kết nối</h2>
+          <p class="panel-desc">
+            Nếu chạy ứng dụng dạng file cài đặt <code>.ipk</code> trên TV và gặp lỗi chặn CORS, hãy điền địa chỉ PC chạy <code>server.js</code> (VD: <code>http://192.168.1.10:5050</code>). Để trống nếu mở trực tiếp từ server trên PC.
+          </p>
+          <div class="form-group">
+            <label for="proxy-url-input">Địa chỉ Proxy Server (tùy chọn)</label>
+            <input type="text" id="proxy-url-input" class="tv-input focusable" placeholder="VD: http://192.168.1.10:5050">
+          </div>
+          <div class="form-actions">
+            <button id="save-settings-btn" class="btn btn-primary focusable">Lưu cài đặt</button>
+            <button id="reset-settings-btn" class="btn btn-secondary focusable">Mặc định</button>
+          </div>
+          <div id="settings-message" class="status-message"></div>
+
+          <div class="remote-guide">
+            <h3>Điều khiển bằng Remote LG</h3>
+            <ul>
+              <li><strong>Phím Mũi Tên:</strong> Di chuyển chọn phim / tập phim</li>
+              <li><strong>OK / Enter:</strong> Chọn phim, tạm dừng/phát video</li>
+              <li><strong>Trái / Phải (khi xem):</strong> Tua lùi / Tua tới 10 giây</li>
+              <li><strong>Back / Esc:</strong> Quay lại màn hình trước</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- ANIME DETAIL & EPISODE OVERLAY -->
+    <div id="detail-overlay" class="overlay hidden">
+      <div class="detail-container">
+        <div class="detail-top">
+          <img id="detail-poster" class="detail-poster" src="" alt="Poster">
+          <div class="detail-meta">
+            <div class="detail-header-bar">
+              <h1 id="detail-title" class="detail-title">Tên Anime</h1>
+              <button id="detail-close-btn" class="btn btn-secondary focusable">✕ Đóng (Back)</button>
+            </div>
+            <div id="detail-tags" class="detail-tags"></div>
+            <p id="detail-desc" class="detail-desc"></p>
+            <div id="detail-auth-warning" class="auth-warning hidden">
+              <span>🔒 Anime47 yêu cầu đăng nhập để tải danh sách tập phim và xem video.</span>
+              <button id="detail-goto-login-btn" class="btn btn-primary focusable">Đăng nhập ngay</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-episodes-section">
+          <div class="episodes-toolbar">
+            <h3>📺 Danh sách tập phim</h3>
+            <div id="episode-group-tabs" class="group-tabs"></div>
+          </div>
+          <div id="episode-list" class="episode-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FULLSCREEN VIDEO PLAYER OVERLAY -->
+    <div id="player-overlay" class="player-overlay hidden">
+      <video id="tv-video" class="tv-video" playsinline crossorigin="anonymous"></video>
+      <iframe id="tv-iframe" class="tv-iframe hidden" frameborder="0" allowfullscreen></iframe>
+
+      <!-- Player Loading Spinner -->
+      <div id="player-loading" class="player-loading hidden">
+        <div class="spinner"></div>
+        <div id="player-loading-text">Đang tải luồng video...</div>
+      </div>
+
+      <!-- Player HUD (Auto hides) -->
+      <div id="player-hud" class="player-hud">
+        <div class="hud-top">
+          <button id="player-back-btn" class="btn btn-secondary focusable">← Quay lại</button>
+          <div class="hud-title-box">
+            <div id="player-anime-title" class="hud-anime-title">Anime</div>
+            <div id="player-ep-title" class="hud-ep-title">Tập 1</div>
+          </div>
+          <div id="player-servers" class="hud-servers"></div>
+        </div>
+
+        <div class="hud-bottom">
+          <div class="progress-row">
+            <span id="time-current">00:00</span>
+            <div class="progress-track" id="progress-track">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <span id="time-duration">00:00</span>
+          </div>
+          <div class="hud-controls">
+            <button id="btn-prev-ep" class="btn btn-secondary focusable">⏮ Tập trước</button>
+            <button id="btn-rewind" class="btn btn-secondary focusable">⏪ -10s</button>
+            <button id="btn-play-pause" class="btn btn-primary focusable">⏸ Tạm dừng</button>
+            <button id="btn-forward" class="btn btn-secondary focusable">+10s ⏩</button>
+            <button id="btn-next-ep" class="btn btn-secondary focusable">Tập sau ⏭</button>
+            <button id="btn-sub-toggle" class="btn btn-secondary focusable">💬 Phụ đề: Bật</button>
+            <button id="btn-aspect" class="btn btn-secondary focusable">🖥️ Khung hình: Vừa màn</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "com.giadinh.anime47tv.service",
+  "version": "1.0.5",
+  "description": "Anime47 TV Local Proxy Service",
+  "main": "service.js"
+}

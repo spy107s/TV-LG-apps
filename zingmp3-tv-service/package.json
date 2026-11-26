@@ -1,0 +1,6 @@
+{
+  "name": "com.giadinh.zingmp3tv.service",
+  "version": "1.0.3",
+  "description": "Zing MP3 TV Local Proxy Service",
+  "main": "service.js"
+}

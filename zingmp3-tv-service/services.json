@@ -1,0 +1,9 @@
+{
+  "id": "com.giadinh.zingmp3tv.service",
+  "description": "Zing MP3 TV Local Proxy Service",
+  "services": [
+    {
+      "name": "com.giadinh.zingmp3tv.service"
+    }
+  ]
+}

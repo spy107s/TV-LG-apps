@@ -1,0 +1,6 @@
+{
+  "name": "com.giadinh.rophimtv.service",
+  "version": "1.0.1",
+  "description": "RoPhim TV Local Proxy and AdBlocker Service",
+  "main": "service.js"
+}

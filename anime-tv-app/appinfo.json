@@ -1,0 +1,19 @@
+{
+  "id": "com.giadinh.anime47tv",
+  "version": "1.0.5",
+  "vendor": "GiaDinh",
+  "type": "web",
+  "main": "index.html",
+  "title": "Anime47 TV",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "mediumLargeIcon": "mediumLargeIcon.png",
+  "extraLargeIcon": "extraLargeIcon.png",
+  "iconColor": "#0b0d14",
+  "bgColor": "#0b0d14",
+  "resolution": "1920x1080",
+  "uiRevision": 2,
+  "disableBackHistoryAPI": true,
+  "handlesRelaunch": true,
+  "requiredACG": []
+}

@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family TV — Biên Hoà</title>
+  <meta name="description" content="App xem ảnh gia đình và nghe nhạc ZingMP3 cho LG WebOS TV, thời tiết Biên Hoà">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    /* ─── TOKENS ─────────────────────────────────── */
+    :root {
+      --bg:           #070710;
+      --glass:        rgba(7, 7, 22, 0.78);
+      --glass-border: rgba(255,255,255,0.10);
+      --accent:       #7c5af0;
+      --accent-light: #a78bfa;
+      --accent-warm:  #fbbf24;
+      --text:         #f1f5f9;
+      --text-muted:   rgba(241,245,249,0.60);
+      --blur:         blur(28px);
+      --radius:       16px;
+      --radius-sm:    10px;
+    }
+
+    /* ─── RESET ──────────────────────────────────── */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body { width:100vw; height:100vh; overflow:hidden; }
+    body {
+      font-family:'Nunito', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font-family:'Nunito', sans-serif; cursor:pointer; }
+    input  { font-family:'Nunito', sans-serif; }
+
+    /* ─── SCROLLBAR ───────────────────────────────── */
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--accent); border-radius:3px; }
+
+    /* ─── FOCUS (remote control) ──────────────────── */
+    *:focus-visible {
+      outline:3px solid var(--accent-light);
+      outline-offset:2px;
+    }
+
+    /* ════════════════════════════════════════════════
+       WELCOME SCREEN
+    ════════════════════════════════════════════════ */
+    #welcome {
+      position:fixed; inset:0; z-index:200;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center; gap:20px;
+      background:
+        radial-gradient(ellipse at 20% 80%, rgba(124,90,240,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, rgba(251,191,36,0.10) 0%, transparent 60%),
+        linear-gradient(160deg, #070710 0%, #0f0820 50%, #070f18 100%);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    #welcome.hide { opacity:0; pointer-events:none; transform:scale(1.04); }
+
+    #welcome-emoji { font-size:80px; line-height:1; }
+    #welcome h1 {
+      font-size:64px; font-weight:900; line-height:1;
+      background:linear-gradient(135deg, #a78bfa 0%, #fbbf24 100%);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    #welcome p {
+      font-size:26px; color:var(--text-muted);
+      text-align:center; max-width:600px; line-height:1.5;
+    }
+    #btn-welcome {
+      margin-top:12px;
+      padding:18px 52px;
+      font-size:26px; font-weight:800;
+      color:#fff;
+      background:linear-gradient(135deg, var(--accent) 0%, #5b21b6 100%);
+      border:none; border-radius:100px;
+      box-shadow:0 0 50px rgba(124,90,240,0.35);
+      transition:transform 0.25s, box-shadow 0.25s;
+    }
+    #btn-welcome:hover { transform:scale(1.06); box-shadow:0 0 70px rgba(124,90,240,0.55); }
+
+    /* ════════════════════════════════════════════════
+       SLIDESHOW
+    ════════════════════════════════════════════════ */
+    #slideshow {
+      position:fixed; inset:0; z-index:0;
+      background:#000;
+    }
+
+    .slide {
+      position:absolute; inset:0;
+      background-size:cover; background-position:center;
+      opacity:0;
+      transition:opacity 1.8s ease-in-out;
+      will-change:opacity, transform;
+    }
+    .slide.active { opacity:1; }
+
+    /* Ken Burns animations */
+    @keyframes kb1 { from{transform:scale(1.00) translate(0%,0%)}   to{transform:scale(1.14) translate(-2%,-1%)} }
+    @keyframes kb2 { from{transform:scale(1.10) translate(2%,1%)}   to{transform:scale(1.00) translate(-1%,0%)} }
+    @keyframes kb3 { from{transform:scale(1.06) translate(-1%,1%)}  to{transform:scale(1.16) translate(1.5%,-1.5%)} }
+    @keyframes kb4 { from{transform:scale(1.12) translate(1%,-1%)}  to{transform:scale(1.00) translate(-2%,1%)} }
+
+    .slide.active.kb1 { animation:kb1 14s ease-in-out forwards; }
+    .slide.active.kb2 { animation:kb2 14s ease-in-out forwards; }
+    .slide.active.kb3 { animation:kb3 14s ease-in-out forwards; }
+    .slide.active.kb4 { animation:kb4 14s ease-in-out forwards; }
+
+    /* Bottom vignette */
+    #vignette {
+      position:fixed; bottom:0; left:0; right:0;
+      height:320px; z-index:1; pointer-events:none;
+      background:linear-gradient(to top,
+        rgba(7,7,16,0.97) 0%,
+        rgba(7,7,16,0.65) 40%,
+        rgba(7,7,16,0.20) 70%,
+        transparent 100%);
+    }
+
+    /* Pause/Play flash */
+    #flash {
+      position:fixed; top:50%; left:50%;
+      transform:translate(-50%,-50%);
+      font-size:96px; z-index:30;
+      opacity:0; pointer-events:none;
+      transition:opacity 0.15s;
+      filter:drop-shadow(0 0 30px rgba(0,0,0,0.8));
+    }
+    #flash.show { opacity:1; }
+
+    /* ════════════════════════════════════════════════
+       HUD (bottom bar)
+    ════════════════════════════════════════════════ */
+    #hud {
+      position:fixed; bottom:0; left:0; right:0;
+      z-index:10;
+      animation:slideUp 0.7s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform:translateY(30px); opacity:0; }
+      to   { transform:translateY(0);    opacity:1; }
+    }
+
+    /* Top row: clock | controls | buttons */
+    #hud-top {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:12px 44px 8px;
+    }
+
+    #hud-left { display:flex; flex-direction:column; gap:2px; }
+
+    #clock {
+      font-size:52px; font-weight:900; line-height:1;
+      letter-spacing:-2px;
+      text-shadow:0 2px 20px rgba(0,0,0,0.5);
+    }
+    #date {
+      font-size:20px; font-weight:600;
+      color:var(--text-muted);
+    }
+
+    /* Center controls pill */
+    #hud-center {
+      display:flex; align-items:center; gap:14px;
+      padding:12px 26px;
+      background:var(--glass);
+      backdrop-filter:var(--blur);
+      border:1px solid var(--glass-border);
+      border-radius:100px;
+    }
+
+    .ctrl-btn {
+      background:rgba(255,255,255,0.10);
+      border:1px solid rgba(255,255,255,0.14);
+      color:var(--text);
+      border-radius:50%;
+      width:50px; height:50px;
+      font-size:20px;
+      display:flex; align-items:center; justify-content:center;
+      transition:all 0.2s;
+    }
+    .ctrl-btn:hover, .ctrl-btn:focus {
+      background:var(--accent);
+      border-color:var(--accent-light);
+      transform:scale(1.12);
+    }
+
+    #photo-counter {
+      font-size:26px; font-weight:800;
+      min-width:88px; text-align:center;
+    }
+    #interval-badge {
+      font-size:18px; color:var(--text-muted); font-weight:600;
+    }
+
+    /* Right actions */
+    #hud-right { display:flex; gap:14px; align-items:center; }
+
+    .pill-btn {
+      background:var(--glass);
+      backdrop-filter:var(--blur);
+      border:1px solid var(--glass-border);
+      color:var(--text);
+      border-radius:100px;
+      padding:11px 26px;
+      font-size:20px; font-weight:700;
+      transition:all 0.2s;
+    }
+    .pill-btn:hover, .pill-btn:focus {
+      background:rgba(124,90,240,0.30);
+      border-color:var(--accent);
+      box-shadow:0 0 24px rgba(124,90,240,0.3);
+    }
+
+    /* Weather row */
+    #weather-bar {
+      display:flex; align-items:center; gap:20px;
+      padding:6px 44px 16px;
+      font-size:21px;
+      color:var(--text-muted);
+      border-top:1px solid rgba(255,255,255,0.06);
+      flex-wrap:wrap;
+    }
+
+    #wx-location { font-size:23px; font-weight:800; color:var(--accent-light); }
+    #wx-temp     { font-size:28px; font-weight:900; color:var(--accent-warm); }
+    #wx-icon     { font-size:26px; }
+    #wx-desc     { color:var(--text); font-weight:600; }
+
+    .wx-dot {
+      width:4px; height:4px; border-radius:50%;
+      background:rgba(255,255,255,0.25);
+      flex-shrink:0;
+    }
+
+    /* ════════════════════════════════════════════════
+       ZINGMP3 PiP
+    ════════════════════════════════════════════════ */
+    #pip {
+      position:fixed;
+      right:28px;
+      z-index:20;
+      border-radius:16px;
+      overflow:hidden;
+      background:rgba(8,8,24,0.95);
+      backdrop-filter:var(--blur);
+      border:1px solid var(--glass-border);
+      box-shadow:0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(124,90,240,0.15);
+      transition:all 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    /* Mini: header + music controls */
+    #pip.s-mini {
+      bottom:152px;
+      width:310px;
+    }
+    /* Open PiP: header + iframe + music controls */
+    #pip.s-open {
+      bottom:152px;
+      width:360px;
+    }
+    /* Hidden: off-screen but iframe alive for audio */
+    #pip.s-hidden {
+      bottom:0; right:-420px;
+      width:360px;
+      opacity:0; pointer-events:none;
+    }
+
+    #pip-bar {
+      display:flex; align-items:center;
+      gap:8px; padding:0 12px;
+      height:42px;
+      cursor:pointer;
+      border-bottom:1px solid rgba(255,255,255,0.06);
+    }
+    #pip-bar span {
+      flex:1; font-size:16px; font-weight:700;
+      color:var(--accent-light);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .pip-icon-btn {
+      background:rgba(255,255,255,0.10);
+      border:none; color:var(--text);
+      border-radius:7px;
+      width:28px; height:28px;
+      font-size:14px;
+      display:flex; align-items:center; justify-content:center;
+      flex-shrink:0;
+      transition:background 0.2s;
+    }
+    .pip-icon-btn:hover { background:var(--accent); }
+
+    #zing-frame {
+      width:360px;
+      border:none; display:block;
+      transition:height 0.35s ease, opacity 0.35s ease;
+    }
+    #pip.s-mini   #zing-frame { height:1px; opacity:0; pointer-events:none; }
+    #pip.s-open   #zing-frame { height:190px; opacity:1; }
+    #pip.s-hidden #zing-frame { height:190px; opacity:0; }
+
+    /* ─── MUSIC CONTROLS ────────────────────────────────────── */
+    #pip-controls {
+      padding:10px 14px 12px;
+      background:rgba(0,0,0,0.3);
+      border-top:1px solid rgba(255,255,255,0.06);
+    }
+
+    /* Hide controls in hidden state */
+    #pip.s-hidden #pip-controls { display:none; }
+
+    #mc-row {
+      display:flex; align-items:center; justify-content:center;
+      gap:12px; margin-bottom:10px;
+    }
+
+    .mc-btn {
+      background:rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.12);
+      color:var(--text); border-radius:50%;
+      width:40px; height:40px; font-size:18px;
+      display:flex; align-items:center; justify-content:center;
+      transition:all 0.18s; flex-shrink:0;
+      cursor:pointer;
+    }
+    .mc-btn:hover { background:var(--accent); border-color:var(--accent-light); transform:scale(1.1); }
+    .mc-btn:active { transform:scale(0.95); }
+
+    #mc-play {
+      width:48px; height:48px; font-size:22px;
+      background:linear-gradient(135deg, var(--accent), #5b21b6);
+      border:none;
+      box-shadow:0 4px 16px rgba(124,90,240,0.4);
+    }
+    #mc-play:hover { transform:scale(1.12); box-shadow:0 6px 24px rgba(124,90,240,0.6); }
+
+    /* Progress bar */
+    #mc-progress-wrap {
+      display:flex; align-items:center; gap:10px;
+    }
+    #mc-prog-track {
+      flex:1; height:4px; border-radius:2px;
+      background:rgba(255,255,255,0.15);
+      cursor:pointer; position:relative;
+      overflow:hidden;
+    }
+    #mc-prog-fill {
+      height:100%; border-radius:2px;
+      background:linear-gradient(90deg, var(--accent), var(--accent-light));
+      width:0%;
+      transition:width 0.8s linear;
+      position:relative;
+    }
+    #mc-prog-fill::after {
+      content:'';
+      position:absolute; right:0; top:50%;
+      transform:translateY(-50%);
+      width:10px; height:10px; border-radius:50%;
+      background:var(--accent-light);
+      box-shadow:0 0 8px rgba(167,139,250,0.8);
+    }
+    #mc-time {
+      font-size:14px; color:var(--text-muted); font-weight:600;
+      min-width:38px; text-align:right; flex-shrink:0;
+    }
+
+    /* ════════════════════════════════════════════════
+       SETTINGS PANEL
+    ════════════════════════════════════════════════ */
+    #settings {
+      position:fixed; inset:0; z-index:100;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(4,4,16,0.82);
+      backdrop-filter:blur(32px);
+      opacity:0; pointer-events:none;
+      transition:opacity 0.3s;
+    }
+    #settings.open { opacity:1; pointer-events:all; }
+
+    #settings-box {
+      background:rgba(14,14,34,0.97);
+      border:1px solid var(--glass-border);
+      border-radius:24px;
+      width:880px; max-width:92vw;
+      max-height:88vh;
+      display:flex; flex-direction:column;
+      box-shadow:0 24px 80px rgba(0,0,0,0.7);
+      overflow:hidden;
+      animation:popIn 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    @keyframes popIn {
+      from { transform:scale(0.94) translateY(20px); opacity:0; }
+      to   { transform:scale(1)    translateY(0);    opacity:1; }
+    }
+
+    /* Header */
+    #settings-head {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:26px 36px 18px;
+      border-bottom:1px solid var(--glass-border);
+      flex-shrink:0;
+    }
+    #settings-head h2 {
+      font-size:30px; font-weight:900;
+      background:linear-gradient(135deg, var(--accent-light), var(--accent-warm));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    #btn-close {
+      background:rgba(255,255,255,0.08);
+      border:1px solid var(--glass-border);
+      color:var(--text); border-radius:50%;
+      width:48px; height:48px; font-size:22px;
+      transition:background 0.2s;
+    }
+    #btn-close:hover { background:#ef4444; }
+
+    /* Tabs */
+    #tab-nav {
+      display:flex; gap:4px;
+      padding:14px 36px 0;
+      border-bottom:1px solid var(--glass-border);
+      flex-shrink:0;
+    }
+    .tnav {
+      background:none; border:none;
+      border-bottom:3px solid transparent;
+      padding:10px 22px;
+      font-size:21px; font-weight:700;
+      color:var(--text-muted);
+      margin-bottom:-1px;
+      transition:all 0.2s;
+    }
+    .tnav.on { color:var(--accent-light); border-bottom-color:var(--accent); }
+    .tnav:hover { color:var(--text); }
+
+    /* Tab content */
+    #tab-body {
+      flex:1; overflow-y:auto;
+      padding:26px 36px 32px;
+    }
+
+    .tpanel { display:none; }
+    .tpanel.on { display:block; }
+
+    .sg { margin-bottom:26px; }
+    .sg label {
+      display:block; font-size:19px; font-weight:600;
+      color:var(--text-muted); margin-bottom:10px;
+    }
+
+    .sinput {
+      width:100%;
+      background:rgba(255,255,255,0.07);
+      border:1px solid var(--glass-border);
+      border-radius:var(--radius-sm);
+      padding:13px 17px;
+      font-size:21px; color:var(--text);
+      outline:none;
+      transition:border-color 0.2s;
+    }
+    .sinput:focus { border-color:var(--accent); background:rgba(124,90,240,0.08); }
+    .sinput::placeholder { color:rgba(255,255,255,0.25); }
+
+    .sbtn {
+      padding:13px 28px;
+      font-size:21px; font-weight:700;
+      color:#fff; border:none;
+      border-radius:var(--radius-sm);
+      background:linear-gradient(135deg, var(--accent) 0%, #5b21b6 100%);
+      margin-top:10px;
+      transition:all 0.2s;
+    }
+    .sbtn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(124,90,240,0.4); }
+
+    .sbtn.ghost {
+      background:rgba(255,255,255,0.08);
+      border:1px solid var(--glass-border);
+      color:var(--text);
+    }
+    .sbtn.ghost:hover { background:rgba(255,255,255,0.16); box-shadow:none; }
+
+    .sbtn.danger { background:linear-gradient(135deg,#ef4444,#b91c1c); }
+    .sbtn.danger:hover { box-shadow:0 8px 24px rgba(239,68,68,0.4); }
+
+    .row-btns { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+
+    .chip {
+      background:rgba(255,255,255,0.07);
+      border:2px solid rgba(255,255,255,0.12);
+      border-radius:100px;
+      padding:9px 20px;
+      font-size:19px; font-weight:700;
+      color:var(--text);
+      transition:all 0.2s;
+    }
+    .chip.on {
+      background:rgba(124,90,240,0.22);
+      border-color:var(--accent);
+      color:var(--accent-light);
+    }
+    .chip:hover { border-color:var(--accent-light); }
+
+    /* Status messages */
+    .msg {
+      margin-top:10px; padding:12px 16px;
+      border-radius:var(--radius-sm); font-size:19px; line-height:1.5;
+    }
+    .msg.ok  { background:rgba(16,185,129,0.12); color:#6ee7b7; border:1px solid rgba(16,185,129,0.25); }
+    .msg.err { background:rgba(239,68,68,0.12);  color:#fca5a5; border:1px solid rgba(239,68,68,0.25); }
+    .msg.inf { background:rgba(124,90,240,0.12); color:var(--accent-light); border:1px solid rgba(124,90,240,0.25); }
+
+    /* Photo thumbnails */
+    #thumb-grid {
+      display:flex; flex-wrap:wrap; gap:10px;
+      margin-top:12px;
+    }
+    .thumb {
+      width:88px; height:66px;
+      object-fit:cover; border-radius:8px;
+      border:2px solid transparent;
+      cursor:pointer; transition:all 0.2s;
+      flex-shrink:0;
+    }
+    .thumb:hover { transform:scale(1.08); border-color:var(--accent-light); }
+    .thumb.cur   { border-color:var(--accent); box-shadow:0 0 14px rgba(124,90,240,0.5); }
+
+    .more-label {
+      display:flex; align-items:center;
+      font-size:17px; color:var(--text-muted);
+    }
+
+    /* Quick zing links */
+    .zing-chip {
+      background:rgba(255,255,255,0.07);
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:var(--radius-sm);
+      padding:10px 18px;
+      font-size:19px; font-weight:700;
+      color:var(--text);
+      transition:all 0.2s;
+    }
+    .zing-chip:hover {
+      background:rgba(124,90,240,0.22);
+      border-color:var(--accent);
+      color:var(--accent-light);
+    }
+
+    /* Remote hint toast */
+    #remote-hint {
+      position:fixed; top:20px; left:50%;
+      transform:translateX(-50%);
+      background:var(--glass); backdrop-filter:var(--blur);
+      border:1px solid var(--glass-border); border-radius:100px;
+      padding:10px 28px; font-size:18px; color:var(--text-muted);
+      z-index:15; white-space:nowrap;
+      opacity:0; pointer-events:none;
+      transition:opacity 0.3s;
+    }
+    #remote-hint.show { opacity:1; }
+  </style>
+</head>
+
+<body>
+
+<!-- Debug log container (hidden by default, shows on error) -->
+<div id="debug-log" style="position:fixed; top:20px; left:20px; z-index:9999; background:rgba(10,10,26,0.92); color:#fff; padding:15px; border-radius:8px; font-family:monospace; font-size:14px; max-width:80%; max-height:40%; overflow-y:auto; border:1px solid #ef4444; display:none; pointer-events:auto; box-shadow:0 8px 32px rgba(0,0,0,0.5);">
+  <h4 style="margin-bottom:10px; border-bottom:1px solid #444; padding-bottom:5px; color:#a78bfa; font-weight:800;">💻 Debug Console</h4>
+</div>
+
+<!-- ══ WELCOME ═══════════════════════════════════════════════════════ -->
+<div id="welcome">
+  <div id="welcome-emoji">🏠</div>
+  <h1>Family TV</h1>
+  <p>Ảnh gia đình · ZingMP3 · Thời tiết Biên Hoà</p>
+  <button id="btn-welcome">Bắt đầu cài đặt →</button>
+</div>
+
+<!-- ══ SLIDESHOW ══════════════════════════════════════════════════════ -->
+<div id="slideshow"></div>
+<div id="vignette"></div>
+<div id="flash"></div>
+
+<!-- ══ HUD ═══════════════════════════════════════════════════════════ -->
+<div id="hud">
+  <div id="hud-top">
+
+    <div id="hud-left">
+      <span id="clock">--:--</span>
+      <span id="date">--</span>
+    </div>
+
+    <div id="hud-center">
+      <button class="ctrl-btn" id="btn-prev" title="Ảnh trước [←]">◀</button>
+      <span id="photo-counter">- / -</span>
+      <button class="ctrl-btn" id="btn-next" title="Ảnh tiếp [→]">▶</button>
+      <span id="interval-badge">⏱ 8s</span>
+    </div>
+
+    <div id="hud-right">
+      <button class="pill-btn" id="btn-zing"  title="Toggle ZingMP3 [G]">🎵 Nhạc</button>
+      <button class="pill-btn" id="btn-menu"  title="Cài đặt [R]">≡ MENU</button>
+    </div>
+
+  </div>
+
+  <!-- Weather bar -->
+  <div id="weather-bar">
+    <span id="wx-icon">🌡️</span>
+    <span id="wx-location">Biên Hoà</span>
+    <span id="wx-temp">--°C</span>
+    <div class="wx-dot"></div>
+    <span id="wx-desc">Đang tải thời tiết...</span>
+    <div class="wx-dot"></div>
+    <span id="wx-humidity">💧 --%</span>
+    <span id="wx-wind">🌬 -- km/h</span>
+    <div class="wx-dot"></div>
+    <span id="wx-feels">Cảm giác: --°C</span>
+  </div>
+</div>
+
+<!-- ══ ZINGMP3 PiP ════════════════════════════════════════════════════ -->
+<div id="pip" class="s-mini">
+  <div id="pip-bar">
+    <span id="pip-label">🎵 ZingMP3</span>
+    <button class="pip-icon-btn" id="pip-expand" title="Mở rộng">⊞</button>
+    <button class="pip-icon-btn" id="pip-hide"   title="Ẩn (vẫn phát)">◎</button>
+  </div>
+  <iframe
+    id="zing-frame"
+    src="about:blank"
+    allow="autoplay; encrypted-media; picture-in-picture"
+    allowfullscreen
+  ></iframe>
+  <!-- Music controls (always visible except hidden state) -->
+  <div id="pip-controls">
+    <div id="mc-row">
+      <button class="mc-btn" id="mc-prev" title="Bài trước">⏮</button>
+      <button class="mc-btn" id="mc-play" title="Play / Pause">⏸</button>
+      <button class="mc-btn" id="mc-next" title="Bài tiếp">⏭</button>
+    </div>
+    <div id="mc-progress-wrap">
+      <div id="mc-prog-track">
+        <div id="mc-prog-fill"></div>
+      </div>
+      <span id="mc-time">0:00</span>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ SETTINGS ═══════════════════════════════════════════════════════ -->
+<div id="settings" role="dialog" aria-modal="true">
+  <div id="settings-box">
+
+    <div id="settings-head">
+      <h2>⚙️ Cài đặt</h2>
+      <button id="btn-close">✕</button>
+    </div>
+
+    <div id="tab-nav">
+      <button class="tnav on" data-tab="photos">📷 Ảnh</button>
+      <button class="tnav"    data-tab="music" >🎵 Nhạc</button>
+      <button class="tnav"    data-tab="prefs" >⚙️ Tuỳ chỉnh</button>
+    </div>
+
+    <div id="tab-body">
+
+      <!-- ── TAB: ẢNH ───────────────────────────────── -->
+      <div class="tpanel on" id="tab-photos">
+
+        <div class="sg">
+          <label>🔗 Google Photos — Shared Album URL</label>
+          <input class="sinput" id="inp-album" type="url"
+            placeholder="https://photos.google.com/share/...">
+          <div class="row-btns">
+            <button class="sbtn" id="btn-load-album">📥 Tải album</button>
+          </div>
+          <div id="album-msg"></div>
+        </div>
+
+        <div class="sg">
+          <label>📁 Upload ảnh từ máy / USB</label>
+          <input type="file" id="inp-local" accept="image/*" multiple style="display:none">
+          <div class="row-btns">
+            <button class="sbtn ghost" onclick="document.getElementById('inp-local').click()">
+              📂 Chọn ảnh từ thiết bị
+            </button>
+          </div>
+          <div id="local-msg"></div>
+        </div>
+
+        <div class="sg">
+          <label>🖼️ Ảnh hiện tại — <span id="photo-count">0</span> ảnh</label>
+          <div id="thumb-grid"></div>
+          <div class="row-btns" style="margin-top:14px">
+            <button class="sbtn danger" id="btn-clear">🗑️ Xoá tất cả</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── TAB: NHẠC ──────────────────────────────── -->
+      <div class="tpanel" id="tab-music">
+
+        <div class="sg">
+          <label>🎵 URL Nhạc (ZingMP3 hoặc YouTube Video / Playlist)</label>
+          <input class="sinput" id="inp-zing" type="url"
+            placeholder="Dán link bài hát/playlist từ ZingMP3 hoặc YouTube...">
+          <div class="row-btns">
+            <button class="sbtn" id="btn-play-zing">▶ Phát nhạc</button>
+            <button class="sbtn ghost" id="btn-open-zing-tab" style="border-color:#fbbf24; color:#fbbf24;">🌐 Mở ZingMP3 tab mới</button>
+          </div>
+          <div class="msg inf" style="margin-top:12px; font-size:16px; line-height:1.4;">
+            ℹ️ <b>Lưu ý:</b> ZingMP3 chặn phát nhạc trực tiếp trong khung hình (iframe) trên TV do chính sách bảo mật của họ.
+            Nếu nhạc ZingMP3 không chạy, hãy bấm nút <b>"Mở ZingMP3 tab mới"</b> để phát ở tab trình duyệt TV riêng, hoặc hãy dán <b>Link YouTube</b> để trình chiếu nhạc hình trực tiếp!
+          </div>
+        </div>
+
+        <div class="sg">
+          <label>⚡ YouTube Presets (Chạy trực tiếp PiP ổn định)</label>
+          <div class="row-btns">
+            <button class="zing-chip" data-zing="https://www.youtube.com/watch?v=jfKfPfyJRdk">🎧 Lofi Girl Chill Beats</button>
+            <button class="zing-chip" data-zing="https://www.youtube.com/watch?v=4xDzrJKXOOY">☕ Lofi Cafe Music</button>
+            <button class="zing-chip" data-zing="https://www.youtube.com/watch?v=tNkZs5WJgEE">🎻 Acoustic Pop Cover</button>
+            <button class="zing-chip" data-zing="https://www.youtube.com/watch?v=Tj75Arx5580">🎤 V-Pop Acoustic Chill</button>
+          </div>
+        </div>
+
+        <div class="sg">
+          <label>⚡ ZingMP3 Presets (Mở tab mới nếu bị chặn iframe)</label>
+          <div class="row-btns">
+            <button class="zing-chip" data-zing="https://zingmp3.vn">🏠 Trang chủ Zing</button>
+            <button class="zing-chip" data-zing="https://zingmp3.vn/zing-chart">📈 BXH Zing Chart</button>
+            <button class="zing-chip" data-zing="https://zingmp3.vn/the-loai-playlist/Nhac-Chill.html">🌙 Nhạc Chill</button>
+            <button class="zing-chip" data-zing="https://zingmp3.vn/the-loai-playlist/V-Pop.html">🎤 Nhạc V-Pop</button>
+          </div>
+        </div>
+
+        <div class="sg">
+          <label>📺 Hiển thị cửa sổ nhạc</label>
+          <div class="row-btns" id="pip-opts">
+            <button class="chip on" data-ps="mini">🎵 Mini (chỉ nhạc)</button>
+            <button class="chip"    data-ps="open">⊞ PiP mở rộng</button>
+            <button class="chip"    data-ps="hidden">🔇 Ẩn hoàn toàn</button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── TAB: TUỲ CHỈNH ─────────────────────────── -->
+      <div class="tpanel" id="tab-prefs">
+
+        <div class="sg">
+          <label>⏱ Thời gian mỗi ảnh</label>
+          <div class="row-btns" id="int-opts">
+            <button class="chip"    data-int="5">5 giây</button>
+            <button class="chip on" data-int="8">8 giây</button>
+            <button class="chip"    data-int="10">10 giây</button>
+            <button class="chip"    data-int="15">15 giây</button>
+            <button class="chip"    data-int="30">30 giây</button>
+          </div>
+        </div>
+
+        <div class="sg">
+          <label>✨ Hiệu ứng chuyển ảnh</label>
+          <div class="row-btns">
+            <button class="chip on" data-fx="kenburns">🎬 Ken Burns (zoom/pan)</button>
+            <button class="chip"    data-fx="fade">✨ Fade đơn giản</button>
+          </div>
+        </div>
+
+        <div class="sg">
+          <label>🌤️ Thời tiết Biên Hoà</label>
+          <div class="row-btns">
+            <button class="sbtn ghost" id="btn-wx">🔄 Cập nhật ngay</button>
+          </div>
+          <div id="wx-status"></div>
+        </div>
+
+        <div class="sg">
+          <label>🎮 Phím tắt Remote LG WebOS</label>
+          <div style="font-size:18px; color:var(--text-muted); line-height:2.2; margin-top:6px;">
+            <span style="color:var(--text); font-weight:700;">← →</span> &nbsp;Chuyển ảnh &nbsp;&nbsp;
+            <span style="color:var(--text); font-weight:700;">OK / Space</span> &nbsp;Tạm dừng<br>
+            <span style="color:var(--text); font-weight:700;">🔴 Đỏ</span> &nbsp;Mở Menu &nbsp;&nbsp;
+            <span style="color:var(--text); font-weight:700;">🟢 Xanh</span> &nbsp;Toggle ZingMP3<br>
+            <span style="color:var(--text); font-weight:700;">🟡 Vàng</span> &nbsp;Ẩn/Hiện ZingMP3 &nbsp;&nbsp;
+            <span style="color:var(--text); font-weight:700;">BACK</span> &nbsp;Đóng Settings
+          </div>
+        </div>
+
+      </div>
+    </div><!-- /tab-body -->
+  </div><!-- /settings-box -->
+</div><!-- /settings -->
+
+<!-- Remote hint toast -->
+<div id="remote-hint"></div>
+
+<!-- ═════════════════════════════════════════════════════════════════ -->
+<script>
+// Catch all errors and log them to the screen debug div (crucial for TV debugging)
+window.onerror = function(message, source, lineno, colno, error) {
+  const d = document.getElementById('debug-log');
+  if (d) {
+    d.style.display = 'block';
+    d.innerHTML += `<div style="color:#f87171; margin-bottom:8px; font-family:monospace;">❌ [Error] ${message}<br><span style="color:#9ca3af; font-size:12px;">at ${source}:${lineno}:${colno}</span></div>`;
+  }
+  return false;
+};
+window.addEventListener('unhandledrejection', function(event) {
+  const d = document.getElementById('debug-log');
+  if (d) {
+    d.style.display = 'block';
+    const reason = event.reason && event.reason.message ? event.reason.message : event.reason;
+    d.innerHTML += `<div style="color:#fbbf24; margin-bottom:8px; font-family:monospace;">⚠️ [Async Error] ${reason}</div>`;
+  }
+});
+
+// ╔══════════════════════════════════════════════════════════════════╗
+//   FAMILY TV APP  ·  LG WebOS  ·  Biên Hoà, Đồng Nai  ·  2026
+// ╚══════════════════════════════════════════════════════════════════╝
+
+/* ─── HELPER ─────────────────────────────────────────────────────── */
+var $ = function(id) { return document.getElementById(id); };
+
+// Pure ES5 AJAX GET helper (compatible with all browsers)
+function ajaxGet(url, callback, errback, timeoutMs) {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', url, true);
+  if (timeoutMs) xhr.timeout = timeoutMs;
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        callback(xhr.responseText);
+      } else {
+        if (errback) errback(new Error('HTTP ' + xhr.status));
+      }
+    }
+  };
+  xhr.ontimeout = function() {
+    if (errback) errback(new Error('Thời gian kết nối quá hạn (Timeout)'));
+  };
+  xhr.onerror = function() {
+    if (errback) errback(new Error('Lỗi kết nối mạng'));
+  };
+  xhr.send();
+}
+
+// Pure ES5 unique array filter helper
+function uniqueArray(arr) {
+  var u = {}, a = [];
+  for (var i = 0, l = arr.length; i < l; ++i) {
+    if (u.hasOwnProperty(arr[i])) continue;
+    a.push(arr[i]);
+    u[arr[i]] = 1;
+  }
+  return a;
+}
+
+/* ─── STATE ──────────────────────────────────────────────────────── */
+const S = {
+  photos:     [],
+  idx:        0,
+  playing:    true,
+  intervalMs: 8000,
+  effect:     'kenburns',
+  pipState:   'mini',
+  zingUrl:    'https://zingmp3.vn',
+  timer:      null,
+};
+
+/* ─── WMO CODES → Tiếng Việt ──────────────────────────────────────*/
+const WMO = {
+  0:{i:'☀️',d:'Trời quang'},      1:{i:'🌤️',d:'Ít mây'},
+  2:{i:'⛅',d:'Mây rải rác'},    3:{i:'☁️',d:'Nhiều mây'},
+  45:{i:'🌫️',d:'Sương mù'},     48:{i:'🌫️',d:'Sương mù dày'},
+  51:{i:'🌦️',d:'Mưa phùn nhẹ'},53:{i:'🌦️',d:'Mưa phùn'},
+  55:{i:'🌧️',d:'Mưa phùn nặng'},61:{i:'🌧️',d:'Mưa nhẹ'},
+  63:{i:'🌧️',d:'Mưa vừa'},     65:{i:'🌧️',d:'Mưa to'},
+  71:{i:'🌨️',d:'Tuyết nhẹ'},   73:{i:'🌨️',d:'Tuyết vừa'},
+  75:{i:'❄️',d:'Tuyết dày'},    80:{i:'🌦️',d:'Mưa rào nhẹ'},
+  81:{i:'🌧️',d:'Mưa rào vừa'}, 82:{i:'⛈️',d:'Mưa rào mạnh'},
+  95:{i:'⛈️',d:'Có dông'},      96:{i:'⛈️',d:'Dông + mưa đá'},
+  99:{i:'⛈️',d:'Dông mạnh'},
+};
+
+/* ─── DEMO PHOTOS (hiển thị khi chưa có ảnh nào) ─────────────────*/
+const DEMO = [
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80',
+  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1920&q=80',
+  'https://images.unsplash.com/photo-1501854140801-50d01698950b?w=1920&q=80',
+  'https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?w=1920&q=80',
+  'https://images.unsplash.com/photo-1440342359743-84fcb8c21f21?w=1920&q=80',
+];
+const KB = ['kb1','kb2','kb3','kb4'];
+
+/* ════════════════════════════════════════════════════════════════════
+   CLOCK
+════════════════════════════════════════════════════════════════════ */
+function tickClock() {
+  const n = new Date();
+  const hh = String(n.getHours()).padStart(2,'0');
+  const mm = String(n.getMinutes()).padStart(2,'0');
+  const days = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
+  $('clock').textContent = `${hh}:${mm}`;
+  $('date').textContent  = `${days[n.getDay()]}, ${n.getDate()}/${n.getMonth()+1}/${n.getFullYear()}`;
+}
+tickClock();
+setInterval(tickClock, 1000);
+
+/* ════════════════════════════════════════════════════════════════════
+   WEATHER  (Open-Meteo — Biên Hoà 10.9575°N, 106.8426°E)
+════════════════════════════════════════════════════════════════════ */
+function loadWeather() {
+  var API =
+    'https://api.open-meteo.com/v1/forecast' +
+    '?latitude=10.9575&longitude=106.8426' +
+    '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m' +
+    '&timezone=Asia%2FHo_Chi_Minh&wind_speed_unit=kmh';
+    
+  ajaxGet(API, function(responseText) {
+    try {
+      var d = JSON.parse(responseText);
+      var c = d.current;
+      var w = WMO[c.weather_code] || {i:'🌡️', d:'Không rõ'};
+      setWeather(w.i, Math.round(c.temperature_2m), w.d,
+                 c.relative_humidity_2m, Math.round(c.wind_speed_10m),
+                 Math.round(c.apparent_temperature));
+      lsSet('wx', {i:w.i, t:Math.round(c.temperature_2m), d:w.d,
+                   h:c.relative_humidity_2m, wi:Math.round(c.wind_speed_10m),
+                   f:Math.round(c.apparent_temperature)});
+    } catch(e) {
+      console.error("Lỗi parse thời tiết:", e);
+    }
+  }, function(err) {
+    var c = lsGet('wx');
+    if (c) setWeather(c.i, c.t, c.d, c.h, c.wi, c.f);
+    else   $('wx-desc').textContent = 'Không kết nối được';
+  }, 12000);
+}
+function setWeather(icon, temp, desc, hum, wind, feels) {
+  $('wx-icon').textContent     = icon;
+  $('wx-temp').textContent     = `${temp}°C`;
+  $('wx-desc').textContent     = desc;
+  $('wx-humidity').textContent = `💧 ${hum}%`;
+  $('wx-wind').textContent     = `🌬 ${wind} km/h`;
+  $('wx-feels').textContent    = `Cảm giác: ${feels}°C`;
+}
+loadWeather();
+setInterval(loadWeather, 30 * 60 * 1000);
+
+/* ════════════════════════════════════════════════════════════════════
+   SLIDESHOW
+════════════════════════════════════════════════════════════════════ */
+const slidebox = $('slideshow');
+let slides = [];
+
+function buildSlides() {
+  slidebox.querySelectorAll('.slide').forEach(el => el.remove());
+  slides = [];
+  const pool = S.photos.length ? S.photos : DEMO;
+  pool.forEach(src => {
+    const d = document.createElement('div');
+    d.className = 'slide';
+    d.style.backgroundImage = `url('${src}')`;
+    slidebox.appendChild(d);
+    slides.push(d);
+  });
+  if (S.idx >= slides.length) S.idx = 0;
+  showSlide(S.idx);
+}
+
+function showSlide(i) {
+  slides.forEach((s, j) => {
+    s.classList.remove('active', ...KB);
+    if (j === i) {
+      s.classList.add('active');
+      if (S.effect === 'kenburns') s.classList.add(KB[i % KB.length]);
+    }
+  });
+  const total = S.photos.length || DEMO.length;
+  $('photo-counter').textContent = `${i+1} / ${total}`;
+}
+
+function goNext() { S.idx=(S.idx+1)%slides.length; showSlide(S.idx); resetTimer(); }
+function goPrev() { S.idx=(S.idx-1+slides.length)%slides.length; showSlide(S.idx); resetTimer(); }
+
+function startTimer() {
+  clearInterval(S.timer);
+  if (S.playing) S.timer = setInterval(goNext, S.intervalMs);
+}
+function resetTimer() { startTimer(); }
+
+function togglePlay() {
+  S.playing = !S.playing;
+  const f = $('flash');
+  f.textContent = S.playing ? '▶' : '⏸';
+  f.classList.add('show');
+  setTimeout(()=>f.classList.remove('show'), 900);
+  startTimer();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   GOOGLE PHOTOS LOADER
+════════════════════════════════════════════════════════════════════ */
+// Highly-compatible fetch wrapper with timeout (compatible with older WebOS TV runtimes)
+function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Yêu cầu quá hạn (Timeout)')), timeoutMs);
+    fetch(url, options)
+      .then(res => {
+        clearTimeout(timer);
+        resolve(res);
+      })
+      .catch(err => {
+        clearTimeout(timer);
+        reject(err);
+      });
+  });
+}
+
+function loadAlbum(albumUrl) {
+  var msg = $('album-msg');
+  msg.innerHTML = '<div class="msg inf">⏳ Đang chuẩn bị kết nối...</div>';
+  
+  var cleanUrl = albumUrl.trim();
+  
+  // Helper to fetch text from a URL via proxy using ajaxGet
+  function tryProxy(proxyName, proxyUrl, isJson, successCb, failCb) {
+    msg.innerHTML = '<div class="msg inf">⏳ Đang tải album qua cổng kết nối: <b>' + proxyName + '</b>...</div>';
+    ajaxGet(proxyUrl, function(responseText) {
+      if (isJson) {
+        try {
+          var j = JSON.parse(responseText);
+          successCb(j.contents || '');
+        } catch(e) {
+          failCb(new Error('Lỗi giải mã JSON'));
+        }
+      } else {
+        successCb(responseText);
+      }
+    }, failCb, 15000);
+  }
+
+  // Proxy chain list - corsfix.com as Cổng 1 (highly stable with browser Origin header)
+  var chain = [
+    { name: 'corsfix.com (Cổng 1)', url: 'https://proxy.corsfix.com/?url=' + encodeURIComponent(cleanUrl), json: false },
+    { name: 'corsproxy.io (Cổng 2)', url: 'https://corsproxy.io/?' + encodeURIComponent(cleanUrl), json: false },
+    { name: 'allorigins.win (Cổng 3)', url: 'https://api.allorigins.win/get?url=' + encodeURIComponent(cleanUrl), json: true }
+  ];
+
+  var chainIndex = 0;
+
+  function attemptNextProxy() {
+    if (chainIndex >= chain.length) {
+      msg.innerHTML = '<div class="msg err">❌ Tất cả cổng kết nối proxy đều quá hạn hoặc không phản hồi. Hãy thử lại sau.</div>';
+      return;
+    }
+
+    var proxy = chain[chainIndex];
+    tryProxy(proxy.name, proxy.url, proxy.json, function(html) {
+      if (html && html.length > 2000) {
+        processHtml(html, proxy.name);
+      } else {
+        chainIndex++;
+        attemptNextProxy();
+      }
+    }, function(err) {
+      console.warn(proxy.name + ' failed:', err);
+      chainIndex++;
+      attemptNextProxy();
+    });
+  }
+
+  function processHtml(html, successProxyName) {
+    // Check if the current HTML already contains Google Photos image links.
+    var hasImages = html.indexOf('lh3.googleusercontent.com/pw/') > -1 || html.indexOf('lh3.googleusercontent.com/') > -1;
+
+    // If it's a redirect/short link page and we don't have images yet, resolve the redirect
+    if (!hasImages && (html.length < 25000 || cleanUrl.indexOf('photos.app.goo.gl') > -1 || cleanUrl.indexOf('goo.gl') > -1)) {
+      msg.innerHTML = '<div class="msg inf">⏳ Đang giải mã liên kết rút gọn Google Photos...</div>';
+      var canonicalMatch = html.match(/https:\/\/photos\.google\.com\/share\/[^\s"'<>\\]+/);
+      if (canonicalMatch) {
+        var realUrl = canonicalMatch[0].replace(/\\u003d/g, '=').replace(/&amp;/g, '&');
+        console.log("Resolved short URL to:", realUrl);
+        
+        var redirectChain = [
+          { name: 'corsfix.com (Redirect)', url: 'https://proxy.corsfix.com/?url=' + encodeURIComponent(realUrl), json: false },
+          { name: 'corsproxy.io (Redirect)', url: 'https://corsproxy.io/?' + encodeURIComponent(realUrl), json: false },
+          { name: 'allorigins.win (Redirect)', url: 'https://api.allorigins.win/get?url=' + encodeURIComponent(realUrl), json: true }
+        ];
+        
+        var rIndex = 0;
+        function attemptRedirectProxy() {
+          if (rIndex >= redirectChain.length) {
+            // fallback to original html
+            parseAndSave(html, successProxyName);
+            return;
+          }
+          var rp = redirectChain[rIndex];
+          tryProxy(rp.name, rp.url, rp.json, function(htmlReal) {
+            if (htmlReal && htmlReal.length > 5000) {
+              parseAndSave(htmlReal, rp.name);
+            } else {
+              rIndex++;
+              attemptRedirectProxy();
+            }
+          }, function(err) {
+            console.warn(rp.name + ' redirect failed:', err);
+            rIndex++;
+            attemptRedirectProxy();
+          });
+        }
+        attemptRedirectProxy();
+      } else {
+        parseAndSave(html, successProxyName);
+      }
+    } else {
+      parseAndSave(html, successProxyName);
+    }
+  }
+
+  function parseAndSave(htmlContent, proxyUsed) {
+    var rePw = /lh3\.googleusercontent\.com\/pw\/[a-zA-Z0-9_\-]{20,}/g;
+    var matchesPw = htmlContent.match(rePw) || [];
+    for (var i = 0; i < matchesPw.length; i++) {
+      matchesPw[i] = 'https://' + matchesPw[i];
+    }
+
+    var reGen = /https:\/\/lh3\.googleusercontent\.com\/[a-zA-Z0-9_\-]{20,}/g;
+    var matchesGen = htmlContent.match(reGen) || [];
+
+    var found = matchesPw.length > 0 ? matchesPw : matchesGen;
+    found = uniqueArray(found);
+
+    var finalPhotos = [];
+    for (var j = 0; j < found.length; j++) {
+      var u = found[j];
+      if (u.length > 55 && u.indexOf('favicon') === -1) {
+        finalPhotos.push(u.split('=')[0] + '=w1920-h1080');
+      }
+    }
+
+    if (!finalPhotos.length) {
+      msg.innerHTML = '<div class="msg err">❌ Không lấy được ảnh từ HTML.<br>Hãy đảm bảo Album này đã được bật <b>"Chia sẻ liên kết" (Link Sharing)</b> trong Google Photos.</div>';
+      return;
+    }
+
+    S.photos = finalPhotos;
+    lsSet('photos', finalPhotos);
+    lsSet('album_url', cleanUrl);
+    
+    buildSlides();
+    renderThumbs();
+    
+    msg.innerHTML = '<div class="msg ok">✅ Đã tải thành công <b>' + finalPhotos.length + ' ảnh</b>!<br><span style="font-size:14px;color:var(--text-muted);">Cổng kết nối: ' + proxyUsed + '</span></div>';
+  }
+
+  attemptNextProxy();
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   LOCAL FILE UPLOAD
+════════════════════════════════════════════════════════════════════ */
+$('inp-local').addEventListener('change', e => {
+  const files = [...e.target.files];
+  if (!files.length) return;
+  let done = 0;
+  const msg = $('local-msg');
+  msg.innerHTML = '<div class="msg inf">⏳ Đang đọc ảnh...</div>';
+  files.forEach(f => {
+    const rd = new FileReader();
+    rd.onload = ev => {
+      if (!S.photos.includes(ev.target.result)) S.photos.push(ev.target.result);
+      done++;
+      if (done === files.length) {
+        buildSlides(); renderThumbs();
+        msg.innerHTML = `<div class="msg ok">✅ Đã thêm ${done} ảnh từ thiết bị!</div>`;
+      }
+    };
+    rd.readAsDataURL(f);
+  });
+  e.target.value = ''; // Reset so same files can be re-selected
+});
+
+/* ════════════════════════════════════════════════════════════════════
+   THUMBNAILS
+════════════════════════════════════════════════════════════════════ */
+function renderThumbs() {
+  $('photo-count').textContent = S.photos.length;
+  const g = $('thumb-grid');
+  g.innerHTML = '';
+  const limit = 40;
+  S.photos.slice(0, limit).forEach((src, i) => {
+    const img = document.createElement('img');
+    img.className = 'thumb' + (i===S.idx ? ' cur' : '');
+    img.src = src; img.title = `Ảnh ${i+1}`; img.loading = 'lazy';
+    img.onclick = () => { S.idx=i; showSlide(i); resetTimer(); };
+    g.appendChild(img);
+  });
+  if (S.photos.length > limit) {
+    const sp = document.createElement('span');
+    sp.className = 'more-label';
+    sp.textContent = `+${S.photos.length - limit} ảnh nữa`;
+    g.appendChild(sp);
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   ZINGMP3 PiP
+════════════════════════════════════════════════════════════════════ */
+function setPip(state) {
+  S.pipState = state;
+  $('pip').className = 's-' + state;
+  document.querySelectorAll('[data-ps]').forEach(b => {
+    b.classList.toggle('on', b.dataset.ps===state);
+  });
+  lsSet('pip_state', state);
+}
+
+function togglePip() {
+  setPip(S.pipState==='open' ? 'mini' : 'open');
+}
+
+function getEmbedUrl(url) {
+  if (!url) return 'about:blank';
+  let clean = url.trim();
+  
+  // YouTube Video Pattern
+  let youtubeVideoReg = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  let match = clean.match(youtubeVideoReg);
+  if (match && match[2].length === 11) {
+    return `https://www.youtube.com/embed/${match[2]}?autoplay=1&enablejsapi=1`;
+  }
+  
+  // YouTube Playlist Pattern
+  let youtubePlaylistReg = /[&?]list=([^&\?]+)/;
+  let playlistMatch = clean.match(youtubePlaylistReg);
+  if (playlistMatch) {
+    return `https://www.youtube.com/embed/videoseries?list=${playlistMatch[1]}&autoplay=1&enablejsapi=1`;
+  }
+  
+  return clean;
+}
+
+function playZing(url) {
+  S.zingUrl = url;
+  lsSet('zing_url', url);
+  
+  const embedUrl = getEmbedUrl(url);
+  $('zing-frame').src = embedUrl;
+  
+  if (S.pipState === 'hidden') setPip('mini');
+  
+  // Reset fake music progress
+  mcSecs = 0;
+  mcPlaying = true;
+  $('mc-play').textContent = '⏸';
+  mcStartTimer();
+  mcUpdateUI();
+  
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    $('pip-label').textContent = '📺 YouTube Music';
+    showHint('📺 Đang tải video nhạc YouTube...');
+  } else {
+    $('pip-label').textContent = '🎵 ZingMP3';
+    showHint('🎵 Đang tải ZingMP3...');
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   MUSIC CONTROLS (progress bar, play/pause, next, prev)
+════════════════════════════════════════════════════════════════════ */
+let mcPlaying  = true;
+let mcSecs     = 0;        // elapsed seconds
+let mcTotal    = 240;      // assumed song length (4 min default)
+let mcTimer    = null;
+
+function mcStartTimer() {
+  clearInterval(mcTimer);
+  if (mcPlaying) {
+    mcTimer = setInterval(mcTick, 1000);
+  }
+}
+
+function mcTick() {
+  mcSecs++;
+  if (mcSecs >= mcTotal) mcSecs = 0; // loop
+  mcUpdateUI();
+}
+
+function mcUpdateUI() {
+  const m  = Math.floor(mcSecs / 60);
+  const s  = mcSecs % 60;
+  $('mc-time').textContent = `${m}:${String(s).padStart(2,'0')}`;
+  const pct = Math.min((mcSecs / mcTotal) * 100, 100);
+  $('mc-prog-fill').style.width = pct + '%';
+}
+
+// Click on progress bar to seek
+$('mc-prog-track').addEventListener('click', e => {
+  const rect = $('mc-prog-track').getBoundingClientRect();
+  const pct  = (e.clientX - rect.left) / rect.width;
+  mcSecs     = Math.round(pct * mcTotal);
+  mcUpdateUI();
+});
+
+// Try to send keyboard commands to ZingMP3 iframe
+function tryZingKey(keyStr, keyCode) {
+  const frame = $('zing-frame');
+  try { frame.focus(); } catch(_) {}
+  // Attempt cross-origin key dispatch (may be blocked, best-effort)
+  try {
+    frame.contentWindow.document.body.dispatchEvent(
+      new KeyboardEvent('keydown', {key:keyStr, keyCode, bubbles:true, cancelable:true})
+    );
+  } catch(_) {}
+}
+
+$('mc-play').onclick = () => {
+  mcPlaying = !mcPlaying;
+  $('mc-play').textContent = mcPlaying ? '⏸' : '▶️';
+  mcStartTimer();
+  tryZingKey(' ', 32);        // Space = play/pause in ZingMP3
+};
+
+$('mc-prev').onclick = () => {
+  mcSecs = 0;
+  mcUpdateUI();
+  tryZingKey('MediaTrackPrevious', 177); // media prev key
+  showHint('⏮ Trước');
+};
+
+$('mc-next').onclick = () => {
+  mcSecs = 0;
+  mcUpdateUI();
+  tryZingKey('MediaTrackNext', 176);     // media next key
+  showHint('⏭ Tiếp theo');
+};
+
+mcStartTimer();  // Start progress timer
+
+/* ════════════════════════════════════════════════════════════════════
+   SETTINGS
+════════════════════════════════════════════════════════════════════ */
+function openSettings()  { $('settings').classList.add('open'); renderThumbs(); }
+function closeSettings() { $('settings').classList.remove('open'); }
+
+// Tab navigation
+document.querySelectorAll('.tnav').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('.tnav').forEach(x=>x.classList.remove('on'));
+    document.querySelectorAll('.tpanel').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    $('tab-'+b.dataset.tab).classList.add('on');
+  };
+});
+
+// Interval chips
+document.querySelectorAll('[data-int]').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('[data-int]').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    S.intervalMs = parseInt(b.dataset.int) * 1000;
+    $('interval-badge').textContent = `⏱ ${b.dataset.int}s`;
+    lsSet('interval', b.dataset.int);
+    startTimer();
+  };
+});
+
+// Effect chips
+document.querySelectorAll('[data-fx]').forEach(b => {
+  b.onclick = () => {
+    document.querySelectorAll('[data-fx]').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    S.effect = b.dataset.fx;
+    lsSet('effect', S.effect);
+  };
+});
+
+// PiP state chips
+document.querySelectorAll('[data-ps]').forEach(b => {
+  b.onclick = () => setPip(b.dataset.ps);
+});
+
+// ZingMP3 presets
+document.querySelectorAll('[data-zing]').forEach(b => {
+  b.onclick = () => { $('inp-zing').value=b.dataset.zing; playZing(b.dataset.zing); };
+});
+
+/* ─── Button wiring ─────────────────────────────────────────────── */
+$('btn-prev').onclick = goPrev;
+$('btn-next').onclick = goNext;
+$('btn-menu').onclick = openSettings;
+$('btn-close').onclick = closeSettings;
+$('btn-zing').onclick = togglePip;
+
+$('btn-welcome').onclick = () => {
+  $('welcome').classList.add('hide');
+  openSettings();
+  setTimeout(() => playZing('https://zingmp3.vn'), 500);
+  lsSet('welcomed', 1);
+};
+
+$('pip-expand').onclick = () => setPip(S.pipState==='open' ? 'mini' : 'open');
+$('pip-hide').onclick   = () => setPip('hidden');
+$('pip-bar').ondblclick = togglePip;
+
+$('btn-load-album').onclick = () => {
+  const u = $('inp-album').value.trim();
+  if (u) loadAlbum(u);
+  else $('album-msg').innerHTML = '<div class="msg err">⚠️ Vui lòng nhập URL album.</div>';
+};
+
+$('btn-play-zing').onclick = () => {
+  playZing($('inp-zing').value.trim() || 'https://www.youtube.com/watch?v=jfKfPfyJRdk');
+};
+
+$('btn-open-zing-tab').onclick = () => {
+  const url = $('inp-zing').value.trim() || 'https://zingmp3.vn';
+  window.open(url, '_blank');
+  showHint('🌐 Đã mở ZingMP3 ở tab mới trên TV!');
+};
+
+$('btn-clear').onclick = () => {
+  if (!confirm('Xoá tất cả ảnh đã tải?')) return;
+  S.photos=[]; S.idx=0;
+  savePhotos(); buildSlides(); renderThumbs();
+};
+
+$('btn-wx').onclick = () => {
+  loadWeather();
+  $('wx-status').innerHTML = '<div class="msg inf">⏳ Đang cập nhật...</div>';
+  setTimeout(() => { $('wx-status').innerHTML=''; }, 3000);
+};
+
+$('settings').onclick = e => { if(e.target===$('settings')) closeSettings(); };
+
+/* ════════════════════════════════════════════════════════════════════
+   REMOTE CONTROL  (LG WebOS D-pad + colour buttons)
+════════════════════════════════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  const inSettings = $('settings').classList.contains('open');
+
+  if (e.key==='Escape' || e.key==='XF86Back') {
+    e.preventDefault();
+    if (inSettings) closeSettings();
+    return;
+  }
+
+  if (inSettings) return;
+
+  switch(e.key) {
+    case 'ArrowLeft':    e.preventDefault(); goPrev(); break;
+    case 'ArrowRight':   e.preventDefault(); goNext(); break;
+    case 'Enter':
+    case ' ':            e.preventDefault(); togglePlay(); break;
+    case 'ColorF0Red':   // 🔴 Red button
+    case 'r':            openSettings(); break;
+    case 'ColorF1Green': // 🟢 Green button
+    case 'g':            togglePip(); break;
+    case 'ColorF2Yellow':// 🟡 Yellow button
+    case 'y':
+      const next = S.pipState==='hidden' ? 'mini' : 'hidden';
+      setPip(next);
+      showHint(next==='hidden' ? '🔇 ZingMP3 ẩn — nhạc vẫn phát' : '🎵 ZingMP3 hiện');
+      break;
+  }
+});
+
+/* ════════════════════════════════════════════════════════════════════
+   HINT TOAST
+════════════════════════════════════════════════════════════════════ */
+let hintTimer;
+function showHint(text) {
+  const h = $('remote-hint');
+  h.textContent = text;
+  h.classList.add('show');
+  clearTimeout(hintTimer);
+  hintTimer = setTimeout(() => h.classList.remove('show'), 2500);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   LOCAL STORAGE
+════════════════════════════════════════════════════════════════════ */
+const LS_PREFIX = 'ftv_';
+function lsSet(k, v) { localStorage.setItem(LS_PREFIX+k, JSON.stringify(v)); }
+function lsGet(k)    { try { return JSON.parse(localStorage.getItem(LS_PREFIX+k)); } catch(_){ return null; } }
+
+function savePhotos() {
+  // Persist only URL-based photos (base64 is too large for localStorage)
+  const urls = S.photos.filter(p => p.startsWith('http')).slice(0, 80);
+  lsSet('photos', urls);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   LOAD SAVED CONFIG
+════════════════════════════════════════════════════════════════════ */
+function loadConfig() {
+  // Photos
+  S.photos = lsGet('photos') || [];
+
+  // Interval
+  const iv = lsGet('interval');
+  if (iv) {
+    S.intervalMs = parseInt(iv) * 1000;
+    document.querySelectorAll('[data-int]').forEach(b => {
+      b.classList.toggle('on', b.dataset.int===String(iv));
+    });
+    $('interval-badge').textContent = `⏱ ${iv}s`;
+  }
+
+  // Effect
+  const fx = lsGet('effect');
+  if (fx) {
+    S.effect = fx;
+    document.querySelectorAll('[data-fx]').forEach(b => {
+      b.classList.toggle('on', b.dataset.fx===fx);
+    });
+  }
+
+  // ZingMP3 URL
+  const zu = lsGet('zing_url');
+  if (zu) { S.zingUrl = zu; $('inp-zing').value = zu; }
+
+  // PiP state
+  const ps = lsGet('pip_state') || 'mini';
+  S.pipState = ps;
+  $('pip').className = 's-' + ps;
+  document.querySelectorAll('[data-ps]').forEach(b => {
+    b.classList.toggle('on', b.dataset.ps===ps);
+  });
+
+  // Album URL
+  const au = lsGet('album_url');
+  if (au) $('inp-album').value = au;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   INIT
+════════════════════════════════════════════════════════════════════ */
+(function init() {
+  loadConfig();
+  buildSlides();
+  startTimer();
+
+  if (lsGet('welcomed')) {
+    // Returning user — hide welcome, start ZingMP3
+    $('welcome').classList.add('hide');
+    setTimeout(() => { $('zing-frame').src = S.zingUrl; }, 800);
+    
+    // Auto-sync Google Photos shared album in the background on startup
+    const au = lsGet('album_url');
+    if (au) {
+      setTimeout(() => {
+        console.log("Auto-syncing shared album in the background:", au);
+        loadAlbum(au);
+      }, 3000);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

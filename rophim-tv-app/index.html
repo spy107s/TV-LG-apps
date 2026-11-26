@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>RoPhim TV - Không Quảng Cáo</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="hls.min.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Left TV Navigation Rail -->
+    <aside id="sidebar" class="sidebar">
+      <div class="brand">
+        <img src="icon.png" alt="RoPhim" style="width:48px;height:48px;border-radius:12px;display:block;flex-shrink:0;">
+        <div class="brand-text">
+          <span class="brand-title">ROPHIM TV</span>
+          <span class="brand-sub">AD-FREE CINEMA</span>
+        </div>
+      </div>
+
+      <nav class="nav-list" role="navigation">
+        <button class="nav-item focusable active" data-nav="home">
+          <span class="nav-icon">🎬</span>
+          <span class="nav-label">Trang chủ</span>
+        </button>
+        <button class="nav-item focusable" data-nav="search">
+          <span class="nav-icon">🔍</span>
+          <span class="nav-label">Tìm kiếm</span>
+        </button>
+        <button class="nav-item focusable" data-nav="history">
+          <span class="nav-icon">🕒</span>
+          <span class="nav-label">Đã xem</span>
+        </button>
+        <button class="nav-item focusable" data-nav="adblock">
+          <span class="nav-icon">🛡️</span>
+          <span class="nav-label">Chặn QC</span>
+          <span class="nav-badge" id="sidebar-adblock-count">0</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="status-dot online" id="adblock-status-dot"></div>
+        <span id="adblock-status-text">AdBlock: Đang bật</span>
+      </div>
+    </aside>
+
+    <!-- Main Content Viewport -->
+    <main id="main-content" class="main-content">
+      <!-- HOME VIEW -->
+      <section id="view-home" class="view active">
+        <div id="hero-banner" class="hero-banner">
+          <div class="hero-backdrop" id="hero-backdrop"></div>
+          <div class="hero-gradient"></div>
+          <div class="hero-info">
+            <span class="hero-badge" id="hero-badge">TOP ĐÁNH GIÁ • KHÔNG QUẢNG CÁO</span>
+            <h1 class="hero-title" id="hero-title">Đang tải kho phim RoPhim...</h1>
+            <p class="hero-meta" id="hero-meta"></p>
+            <p class="hero-desc" id="hero-desc">Vui lòng đợi trong giây lát...</p>
+            <div class="hero-actions">
+              <button class="btn btn-primary focusable" id="hero-play-btn">▶ Xem ngay</button>
+              <button class="btn btn-secondary focusable" id="hero-next-btn">↻ Phim khác</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="home-collections"></div>
+      </section>
+
+      <!-- SEARCH VIEW -->
+      <section id="view-search" class="view">
+        <div class="search-header">
+          <h2 class="section-title">🔍 Tìm kiếm phim trên RoPhim</h2>
+          <div class="search-bar">
+            <input type="text" id="search-input" class="tv-input focusable" placeholder="Nhập tên phim (VD: One Piece, Avengers, Conan, Hàn Quốc...)" autocomplete="off">
+            <button id="search-submit-btn" class="btn btn-primary focusable">Tìm</button>
+            <button id="search-clear-btn" class="btn btn-secondary focusable">Xóa</button>
+          </div>
+          <div class="quick-tags">
+            <button class="tag-btn focusable" data-tag="Avengers">Avengers</button>
+            <button class="tag-btn focusable" data-tag="Conan">Conan</button>
+            <button class="tag-btn focusable" data-tag="One Piece">One Piece</button>
+            <button class="tag-btn focusable" data-tag="Doraemon">Doraemon</button>
+            <button class="tag-btn focusable" data-tag="Spider-Man">Spider-Man</button>
+            <button class="tag-btn focusable" data-tag="Hàn Quốc">Hàn Quốc</button>
+          </div>
+        </div>
+        <div id="search-status" class="status-message"></div>
+        <div id="grid-search" class="card-grid"></div>
+      </section>
+
+      <!-- HISTORY VIEW -->
+      <section id="view-history" class="view">
+        <div class="section-header-row">
+          <h2 class="section-title">🕒 Phim đã xem gần đây</h2>
+          <button id="clear-history-btn" class="btn btn-secondary focusable">Xóa lịch sử</button>
+        </div>
+        <div id="history-empty" class="status-message hidden">Bạn chưa xem bộ phim nào.</div>
+        <div id="grid-history" class="card-grid"></div>
+      </section>
+
+      <!-- ADBLOCKER MODULE DASHBOARD -->
+      <section id="view-adblock" class="view">
+        <div class="adblock-panel">
+          <div class="section-header-row">
+            <div>
+              <h2 class="section-title" style="margin-bottom: 6px;">🛡️ Module Chặn Quảng Cáo (RoPhim AdBlock)</h2>
+              <p class="panel-desc">Tự động chặn banner web, popup chuyển hướng, TVC MP4 trước phim (`streamxx.net`) và cắt bỏ các đoạn quảng cáo chèn trong luồng `.m3u8`.</p>
+            </div>
+            <button id="adblock-reset-btn" class="btn btn-secondary focusable">Xóa thống kê</button>
+          </div>
+
+          <div class="adblock-stats-grid">
+            <div class="stat-card stat-highlight">
+              <div class="stat-value" id="stat-total">0</div>
+              <div class="stat-label">Tổng QC đã chặn</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-embed">0</div>
+              <div class="stat-label">TVC / Popup Player</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-domain">0</div>
+              <div class="stat-label">Banner / Tracker Web</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-hls">0</div>
+              <div class="stat-label">Đoạn QC trong .m3u8</div>
+            </div>
+          </div>
+
+          <div class="adblock-toggles">
+            <button class="toggle-row focusable" id="toggle-ab-master" data-key="enabled">
+              <div>
+                <div class="toggle-title">Bật bộ lọc Chặn Quảng Cáo tổng</div>
+                <div class="toggle-sub">Bật/tắt toàn bộ 3 tầng bảo vệ chống quảng cáo</div>
+              </div>
+              <span class="toggle-pill on" id="pill-enabled">ĐANG BẬT</span>
+            </button>
+
+            <button class="toggle-row focusable" id="toggle-ab-embed" data-key="blockEmbedAds">
+              <div>
+                <div class="toggle-title">Chặn TVC &amp; Popup trong Player (streamxx.net)</div>
+                <div class="toggle-sub">Tự động chọn luồng VIP Clean, chặn TVC MP4, watermark, banner tạm dừng &amp; click chuyển hướng</div>
+              </div>
+              <span class="toggle-pill on" id="pill-blockEmbedAds">ĐANG BẬT</span>
+            </button>
+
+            <button class="toggle-row focusable" id="toggle-ab-domain" data-key="blockDomains">
+              <div>
+                <div class="toggle-title">Chặn tên miền Quảng cáo &amp; Banner API</div>
+                <div class="toggle-sub">Chặn banner nhà cái, popads, doubleclick, tracker và `/api/v1/banners/public`</div>
+              </div>
+              <span class="toggle-pill on" id="pill-blockDomains">ĐANG BẬT</span>
+            </button>
+
+            <button class="toggle-row focusable" id="toggle-ab-hls" data-key="filterHlsAds">
+              <div>
+                <div class="toggle-title">Lọc đoạn QC chèn giữa phim trong HLS (.m3u8)</div>
+                <div class="toggle-sub">Quét `#EXT-X-DISCONTINUITY` và SCTE-35 để cắt bỏ đoạn video quảng cáo ghép vào giữa phim</div>
+              </div>
+              <span class="toggle-pill on" id="pill-filterHlsAds">ĐANG BẬT</span>
+            </button>
+          </div>
+
+          <div class="adblock-log-box">
+            <h3>📋 Nhật ký chặn quảng cáo trực tiếp</h3>
+            <div id="adblock-log-list" class="adblock-log-list">
+              <div class="log-empty">Chưa có quảng cáo nào bị phát hiện.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- MOVIE DETAIL & EPISODE OVERLAY -->
+    <div id="detail-overlay" class="overlay hidden">
+      <div class="detail-container">
+        <div class="detail-top">
+          <img id="detail-poster" class="detail-poster" src="" alt="Poster">
+          <div class="detail-meta">
+            <div class="detail-header-bar">
+              <div>
+                <h1 id="detail-title" class="detail-title">Tên phim</h1>
+                <div id="detail-origin" class="detail-origin"></div>
+              </div>
+              <button id="detail-close-btn" class="btn btn-secondary focusable">✕ Đóng (Back)</button>
+            </div>
+            <div id="detail-tags" class="detail-tags"></div>
+            <p id="detail-desc" class="detail-desc"></p>
+          </div>
+        </div>
+
+        <div class="detail-episodes-section">
+          <div class="episodes-toolbar">
+            <h3>📺 Chọn phiên bản &amp; Tập phim</h3>
+            <div id="episode-group-tabs" class="group-tabs"></div>
+          </div>
+          <div id="episode-list" class="episode-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FULLSCREEN VIDEO PLAYER OVERLAY -->
+    <div id="player-overlay" class="player-overlay hidden">
+      <video id="tv-video" class="tv-video" playsinline crossorigin="anonymous"></video>
+      <iframe id="tv-iframe" class="tv-iframe hidden" frameborder="0" allowfullscreen></iframe>
+
+      <div id="player-loading" class="player-loading hidden">
+        <div class="spinner"></div>
+        <div id="player-loading-text">Đang giải mã luồng sạch không quảng cáo...</div>
+      </div>
+
+      <div id="player-hud" class="player-hud">
+        <div class="hud-top">
+          <button id="player-back-btn" class="btn btn-secondary focusable">← Quay lại</button>
+          <div class="hud-title-box">
+            <div id="player-movie-title" class="hud-anime-title">RoPhim TV</div>
+            <div id="player-ep-title" class="hud-ep-title">Tập 1</div>
+          </div>
+          <div class="hud-adblock-pill" id="hud-adblock-pill">🛡️ Sạch QC</div>
+          <div id="player-servers" class="hud-servers"></div>
+        </div>
+
+        <div class="hud-bottom">
+          <div class="progress-row">
+            <span id="time-current">00:00</span>
+            <div class="progress-track" id="progress-track">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <span id="time-duration">00:00</span>
+          </div>
+          <div class="hud-controls">
+            <button id="btn-prev-ep" class="btn btn-secondary focusable">⏮ Tập trước</button>
+            <button id="btn-rewind" class="btn btn-secondary focusable">⏪ -10s</button>
+            <button id="btn-play-pause" class="btn btn-primary focusable">⏸ Tạm dừng</button>
+            <button id="btn-forward" class="btn btn-secondary focusable">+10s ⏩</button>
+            <button id="btn-next-ep" class="btn btn-secondary focusable">Tập sau ⏭</button>
+            <button id="btn-aspect" class="btn btn-secondary focusable">🖥️ Khung hình: Vừa màn</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

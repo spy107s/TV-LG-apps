@@ -1,0 +1,9 @@
+{
+  "id": "com.giadinh.rophimtv.service",
+  "description": "RoPhim TV Local Proxy and AdBlocker Service",
+  "services": [
+    {
+      "name": "com.giadinh.rophimtv.service"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "com.giadinh.zingmp3tv",
+  "version": "1.0.3",
+  "vendor": "GiaDinh",
+  "type": "web",
+  "main": "index.html",
+  "title": "Zing MP3 TV",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "mediumLargeIcon": "mediumLargeIcon.png",
+  "extraLargeIcon": "extraLargeIcon.png",
+  "iconColor": "#170f23",
+  "bgColor": "#170f23",
+  "resolution": "1920x1080",
+  "uiRevision": 2,
+  "disableBackHistoryAPI": true,
+  "handlesRelaunch": true,
+  "requiredACG": []
+}

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Zing MP3 TV</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div class="app-body">
+      <!-- LEFT SIDEBAR -->
+      <aside id="sidebar" class="sidebar">
+        <div class="brand">
+          <img src="icon.png" alt="Zing MP3" class="brand-logo-img">
+          <div class="brand-text">
+            <span class="brand-title">Zing MP3</span>
+            <span class="brand-sub">SMART TV</span>
+          </div>
+        </div>
+
+        <nav class="nav-list" role="navigation">
+          <button class="nav-item focusable active" data-nav="home">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-label">Khám phá</span>
+          </button>
+          <button class="nav-item focusable" data-nav="chart">
+            <span class="nav-icon">📈</span>
+            <span class="nav-label">#zingchart</span>
+          </button>
+          <button class="nav-item focusable" data-nav="top100">
+            <span class="nav-icon">🏆</span>
+            <span class="nav-label">Top 100</span>
+          </button>
+          <button class="nav-item focusable" data-nav="hub">
+            <span class="nav-icon">🎨</span>
+            <span class="nav-label">Chủ đề</span>
+          </button>
+          <button class="nav-item focusable" data-nav="search">
+            <span class="nav-icon">🔍</span>
+            <span class="nav-label">Tìm kiếm</span>
+          </button>
+          <button class="nav-item focusable" data-nav="library">
+            <span class="nav-icon">❤️</span>
+            <span class="nav-label">Yêu thích</span>
+          </button>
+        </nav>
+
+        <button id="sidebar-nowplaying-btn" class="sidebar-now-btn focusable">
+          <span class="eq-bars" id="sidebar-eq"><span></span><span></span><span></span></span>
+          <span>Đang phát &amp; Lời</span>
+        </button>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main id="main-content" class="main-content">
+        <!-- HOME / KHÁM PHÁ -->
+        <section id="view-home" class="view active">
+          <div class="page-banner">
+            <div>
+              <span class="banner-pill">ZING MP3 TV • KHÔNG QUẢNG CÁO</span>
+              <h1 class="banner-title">Nghe nhạc chất lượng cao trên TV</h1>
+              <p class="banner-sub" id="home-status-sub">Đang tải kho nhạc mới nhất từ Zing MP3...</p>
+            </div>
+            <button id="btn-quick-play-chart" class="btn btn-primary focusable">▶ Phát nhanh #zingchart</button>
+          </div>
+
+          <div class="section-block">
+            <div class="section-header-row">
+              <h2 class="section-title" style="margin-bottom:0;">✨ Mới Phát Hành</h2>
+              <div class="sub-tabs" id="new-release-tabs">
+                <button class="sub-tab focusable active" data-nr="all">Tất cả</button>
+                <button class="sub-tab focusable" data-nr="vPop">Việt Nam</button>
+                <button class="sub-tab focusable" data-nr="others">Quốc tế</button>
+              </div>
+            </div>
+            <div id="grid-new-release" class="song-grid"></div>
+          </div>
+
+          <div id="home-playlists"></div>
+        </section>
+
+        <!-- #ZINGCHART -->
+        <section id="view-chart" class="view">
+          <div class="section-header-row" style="margin-bottom:22px;">
+            <h2 class="section-title" style="margin-bottom:0;">📈 Bảng Xếp Hạng #zingchart</h2>
+            <div class="sub-tabs" id="chart-tabs">
+              <button class="sub-tab focusable active" data-chart="rt">Top Realtime</button>
+              <button class="sub-tab focusable" data-chart="vn">Việt Nam</button>
+              <button class="sub-tab focusable" data-chart="us">US-UK</button>
+              <button class="sub-tab focusable" data-chart="korea">K-Pop</button>
+            </div>
+          </div>
+          <div id="chart-status" class="status-message hidden"></div>
+          <div id="list-chart" class="chart-list"></div>
+        </section>
+
+        <!-- TOP 100 -->
+        <section id="view-top100" class="view">
+          <h2 class="section-title">🏆 Tuyển Tập Top 100</h2>
+          <div id="top100-status" class="status-message hidden"></div>
+          <div id="top100-container"></div>
+        </section>
+
+        <!-- CHỦ ĐỀ & THỂ LOẠI (HUB) -->
+        <section id="view-hub" class="view">
+          <div id="hub-home-pane">
+            <h2 class="section-title">🎨 Chủ Đề &amp; Thể Loại</h2>
+            <div id="hub-status" class="status-message hidden"></div>
+            <div id="hub-topics-section" class="section-block hidden">
+              <h3 class="sub-section-title">🎭 Tâm Trạng &amp; Hoạt Động</h3>
+              <div id="hub-topics-grid" class="hub-grid"></div>
+            </div>
+            <div id="hub-nations-section" class="section-block hidden">
+              <h3 class="sub-section-title">🌍 Quốc Gia</h3>
+              <div id="hub-nations-grid" class="hub-grid"></div>
+            </div>
+            <div id="hub-genres-container"></div>
+          </div>
+
+          <div id="hub-detail-pane" class="hidden">
+            <div class="section-header-row" style="margin-bottom:20px;">
+              <h2 id="hub-detail-title" class="section-title" style="margin-bottom:0;">🎨 Chủ đề</h2>
+              <button id="hub-back-btn" class="btn btn-secondary focusable">← Quay lại Chủ đề</button>
+            </div>
+            <div id="hub-detail-status" class="status-message hidden"></div>
+            <div id="hub-detail-content"></div>
+          </div>
+        </section>
+
+        <!-- SEARCH -->
+        <section id="view-search" class="view">
+          <h2 class="section-title">🔍 Tìm kiếm Bài hát &amp; Playlist</h2>
+          <div class="search-bar">
+            <input type="text" id="search-input" class="tv-input focusable" placeholder="Nhập tên bài hát, ca sĩ (VD: Sơn Tùng, Bolero, Lofi Chill...)" autocomplete="off">
+            <button id="search-submit-btn" class="btn btn-primary focusable">Tìm</button>
+            <button id="search-clear-btn" class="btn btn-secondary focusable">Xóa</button>
+          </div>
+          <div class="quick-tags">
+            <button class="tag-btn focusable" data-tag="Sơn Tùng M-TP">Sơn Tùng M-TP</button>
+            <button class="tag-btn focusable" data-tag="Vũ.">Vũ.</button>
+            <button class="tag-btn focusable" data-tag="HIEUTHUHAI">HIEUTHUHAI</button>
+            <button class="tag-btn focusable" data-tag="Mỹ Tâm">Mỹ Tâm</button>
+            <button class="tag-btn focusable" data-tag="Bolero">Bolero</button>
+            <button class="tag-btn focusable" data-tag="Lofi Chill">Lofi Chill</button>
+            <button class="tag-btn focusable" data-tag="Nhạc Trẻ Remix">Nhạc Trẻ Remix</button>
+            <button class="tag-btn focusable" data-tag="Nhạc Không Lời">Nhạc Không Lời</button>
+          </div>
+          <div id="search-status" class="status-message"></div>
+          <div id="search-songs-wrap" class="section-block hidden">
+            <h3 class="sub-section-title">🎵 Bài hát</h3>
+            <div id="search-songs" class="song-grid"></div>
+          </div>
+          <div id="search-playlists-wrap" class="section-block hidden">
+            <h3 class="sub-section-title">💿 Playlist / Album</h3>
+            <div id="search-playlists" class="playlist-grid"></div>
+          </div>
+        </section>
+
+        <!-- LIBRARY (FAVORITES + RECENT) -->
+        <section id="view-library" class="view">
+          <div class="section-header-row" style="margin-bottom:20px;">
+            <h2 class="section-title" style="margin-bottom:0;">❤️ Thư Viện Của Bạn</h2>
+            <div class="sub-tabs" id="library-tabs">
+              <button class="sub-tab focusable active" data-lib="favorites">Bài hát yêu thích</button>
+              <button class="sub-tab focusable" data-lib="recent">Nghe gần đây</button>
+            </div>
+          </div>
+          <div id="library-empty" class="status-message hidden">Chưa có bài hát nào. Hãy bấm ❤️ khi nghe nhạc để lưu lại!</div>
+          <div id="grid-library" class="song-grid"></div>
+        </section>
+      </main>
+    </div>
+
+    <!-- PERSISTENT BOTTOM MINI PLAYER BAR -->
+    <footer id="mini-player" class="mini-player">
+      <div class="mini-progress-track">
+        <div class="mini-progress-fill" id="mini-progress-fill"></div>
+      </div>
+      <div class="mini-left">
+        <img id="mini-cover" class="mini-cover" src="icon.png" alt="">
+        <div class="mini-meta">
+          <div id="mini-title" class="mini-title">Chưa phát bài hát nào</div>
+          <div id="mini-artist" class="mini-artist">Chọn một bài hát để bắt đầu thưởng thức</div>
+        </div>
+      </div>
+      <div class="mini-controls">
+        <button id="mini-prev-btn" class="icon-btn focusable" title="Bài trước">⏮</button>
+        <button id="mini-play-btn" class="icon-btn primary focusable" title="Phát / Tạm dừng">▶</button>
+        <button id="mini-next-btn" class="icon-btn focusable" title="Bài tiếp">⏭</button>
+        <button id="mini-fav-btn" class="icon-btn focusable" title="Yêu thích">🤍</button>
+        <button id="mini-ambient-btn" class="icon-btn accent-btn focusable" title="Chế độ Full Screen">⛶</button>
+        <button id="mini-expand-btn" class="btn btn-primary focusable">🎤 Lời bài hát</button>
+      </div>
+    </footer>
+
+    <!-- PLAYLIST DETAIL OVERLAY -->
+    <div id="playlist-overlay" class="overlay hidden">
+      <div class="playlist-modal">
+        <div class="playlist-header">
+          <img id="pl-cover" class="pl-cover" src="" alt="">
+          <div class="pl-info">
+            <div class="pl-top-row">
+              <h1 id="pl-title" class="pl-title">Playlist</h1>
+              <button id="pl-close-btn" class="btn btn-secondary focusable">✕ Đóng (Back)</button>
+            </div>
+            <p id="pl-artists" class="pl-artists"></p>
+            <p id="pl-desc" class="pl-desc"></p>
+            <div class="pl-actions">
+              <button id="pl-play-all-btn" class="btn btn-primary focusable">▶ Phát tất cả</button>
+              <button id="pl-shuffle-btn" class="btn btn-secondary focusable">🔀 Phát ngẫu nhiên</button>
+            </div>
+          </div>
+        </div>
+        <div id="pl-status" class="status-message hidden"></div>
+        <div id="pl-song-list" class="song-grid"></div>
+      </div>
+    </div>
+
+    <!-- FULLSCREEN NOW PLAYING & SYNCED LYRICS OVERLAY -->
+    <div id="player-overlay" class="now-overlay hidden">
+      <div id="now-bg-blur" class="now-bg-blur"></div>
+      <div class="now-bg-shade"></div>
+
+      <div class="now-container">
+        <div class="now-topbar">
+          <button id="now-close-btn" class="btn btn-secondary focusable">← Thu nhỏ (Nhạc vẫn phát)</button>
+          <div class="now-quality-pill" id="now-quality-pill">🎵 Zing MP3</div>
+          <div class="now-right-tabs">
+            <button id="now-tab-lyrics" class="sub-tab focusable active">🎤 Lời bài hát</button>
+            <button id="now-tab-queue" class="sub-tab focusable">📋 Hàng đợi</button>
+          </div>
+        </div>
+
+        <div class="now-grid">
+          <!-- LEFT COLUMN: COVER + CONTROLS -->
+          <div class="now-left">
+            <div class="now-cover-wrap">
+              <img id="now-cover" class="now-cover" src="icon.png" alt="">
+            </div>
+            <div class="now-song-info">
+              <h1 id="now-title" class="now-title">Chưa có bài hát</h1>
+              <div id="now-artist" class="now-artist">Zing MP3 TV</div>
+            </div>
+
+            <div class="now-progress-row">
+              <span id="now-time-cur">00:00</span>
+              <div id="now-progress-track" class="now-progress-track">
+                <div id="now-progress-fill" class="now-progress-fill"></div>
+              </div>
+              <span id="now-time-dur">00:00</span>
+            </div>
+
+            <div class="now-controls">
+              <button id="now-shuffle-btn" class="icon-btn focusable" title="Trộn bài">🔀</button>
+              <button id="now-prev-btn" class="icon-btn focusable" title="Bài trước">⏮</button>
+              <button id="now-play-btn" class="icon-btn primary big focusable" title="Phát / Tạm dừng">▶</button>
+              <button id="now-next-btn" class="icon-btn focusable" title="Bài tiếp">⏭</button>
+              <button id="now-repeat-btn" class="icon-btn focusable" title="Lặp lại">🔁</button>
+              <button id="now-fav-btn" class="icon-btn focusable" title="Yêu thích">🤍</button>
+              <button id="now-ambient-btn" class="icon-btn accent-btn focusable" title="Full Screen">⛶</button>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN: SYNCED LYRICS OR QUEUE -->
+          <div class="now-right">
+            <div id="now-lyrics-panel" class="lyrics-panel">
+              <div id="lyrics-list" class="lyrics-list">
+                <div class="lyric-placeholder">Chọn một bài hát để xem lời đồng bộ theo nhạc.</div>
+              </div>
+            </div>
+            <div id="now-queue-panel" class="queue-panel hidden">
+              <div id="queue-list" class="queue-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AMBIENT FULL SCREEN OVERLAY (RANDOM GIF + BIÊN HÒA WEATHER + CALENDAR + MUSIC VISUALIZER) -->
+    <div id="ambient-overlay" class="ambient-overlay hidden">
+      <!-- Animated Fallback Aurora + Crossfade Random GIF Layers -->
+      <div class="ambient-aurora">
+        <div class="aurora-orb orb-1"></div>
+        <div class="aurora-orb orb-2"></div>
+        <div class="aurora-orb orb-3"></div>
+      </div>
+      <div id="ambient-album-bg" class="ambient-album-bg"></div>
+      <video id="ambient-video" class="ambient-video-layer" autoplay loop muted playsinline></video>
+      <img id="ambient-gif-a" class="ambient-gif-layer" alt="">
+      <img id="ambient-gif-b" class="ambient-gif-layer" alt="">
+      <div class="ambient-vignette"></div>
+
+      <!-- CENTER CIRCULAR MUSIC VISUALIZER (GLOWING CYAN NEON RING, LIGHTWEIGHT FOR TV) -->
+      <div class="ambient-center-viz">
+        <canvas id="ambient-visualizer" class="ambient-visualizer-circle" width="420" height="420"></canvas>
+      </div>
+
+      <div class="ambient-content">
+        <!-- MAIN 3-ZONE STAGE: LEFT (CLOCK/CALENDAR + ALBUM SONGS) | OPEN CENTER (CIRCULAR VIZ) | RIGHT (WEATHER + SYNCED LYRICS) -->
+        <div class="ambient-stage">
+          <!-- LEFT COLUMN -->
+          <div class="ambient-col ambient-col-left">
+            <div class="ambient-glass clock-calendar-card">
+              <div class="ambient-clock-row">
+                <div id="ambient-clock" class="ambient-clock">00:00</div>
+                <div id="ambient-sec" class="ambient-sec">:00</div>
+              </div>
+              <div id="ambient-date-text" class="ambient-date-text">Đang tải lịch...</div>
+              <div class="mini-cal-header">
+                <span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span class="sun">CN</span>
+              </div>
+              <div id="ambient-calendar-grid" class="mini-cal-grid"></div>
+            </div>
+
+            <div class="ambient-glass ambient-translucent-box ambient-album-card">
+              <div class="amb-box-header">
+                <span id="ambient-album-heading">💿 Danh sách phát</span>
+                <span id="ambient-album-count" class="amb-box-count">0 bài</span>
+              </div>
+              <div id="ambient-album-list" class="ambient-album-list"></div>
+            </div>
+          </div>
+
+          <!-- RIGHT COLUMN -->
+          <div class="ambient-col ambient-col-right">
+            <div class="ambient-glass weather-card">
+              <div class="weather-loc">📍 Biên Hòa, Đồng Nai</div>
+              <div class="weather-main-row">
+                <div id="weather-icon" class="weather-icon">🌤️</div>
+                <div>
+                  <div id="weather-temp" class="weather-temp">--°C</div>
+                  <div id="weather-desc" class="weather-desc">Đang cập nhật thời tiết...</div>
+                </div>
+              </div>
+              <div class="weather-stats-grid">
+                <div class="w-stat"><span class="w-label">Cao / Thấp</span><strong id="weather-minmax">--° / --°</strong></div>
+                <div class="w-stat"><span class="w-label">Độ ẩm</span><strong id="weather-humidity">--%</strong></div>
+                <div class="w-stat"><span class="w-label">Khả năng mưa</span><strong id="weather-rain">--%</strong></div>
+                <div class="w-stat"><span class="w-label">Gió</span><strong id="weather-wind">-- km/h</strong></div>
+              </div>
+            </div>
+
+            <div class="ambient-glass ambient-translucent-box ambient-lyrics-card">
+              <div class="amb-box-header">
+                <span>🎤 Lời bài hát</span>
+              </div>
+              <div id="ambient-lyrics-scroll" class="ambient-lyrics-scroll">
+                <div id="ambient-lyrics-list" class="ambient-lyrics-list">
+                  <div class="amb-lyric-empty">Đang chờ lời bài hát...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM COMPACT MUSIC CONTROL BAR -->
+        <div class="ambient-bottom-bar">
+          <div class="ambient-song-box">
+            <img id="ambient-cover" class="ambient-cover" src="icon.png" alt="">
+            <div class="ambient-song-meta">
+              <div id="ambient-title" class="ambient-title">Zing MP3 TV</div>
+              <div id="ambient-artist" class="ambient-artist">Chế độ toàn màn hình</div>
+            </div>
+          </div>
+
+          <div class="ambient-progress-wrap">
+            <span id="ambient-time-cur">00:00</span>
+            <div class="ambient-progress-track">
+              <div id="ambient-progress-fill" class="ambient-progress-fill"></div>
+            </div>
+            <span id="ambient-time-dur">00:00</span>
+          </div>
+
+          <div id="ambient-hud-controls" class="ambient-controls">
+            <button id="amb-prev-btn" class="icon-btn focusable" title="Bài trước">⏮</button>
+            <button id="amb-play-btn" class="icon-btn primary focusable" title="Phát / Tạm dừng">▶</button>
+            <button id="amb-next-btn" class="icon-btn focusable" title="Bài tiếp">⏭</button>
+            <button id="amb-topic-btn" class="btn btn-secondary focusable">🌧️ Rainy</button>
+            <button id="amb-gif-btn" class="btn btn-secondary focusable">🖼️ Đổi nền</button>
+            <button id="amb-close-btn" class="btn btn-secondary focusable">✕ Thoát</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <audio id="tv-audio" preload="auto" crossorigin="anonymous"></audio>
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
